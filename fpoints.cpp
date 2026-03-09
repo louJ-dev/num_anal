@@ -208,6 +208,11 @@ int GetPrecedence(char operation) {
     }
 }
 
+
+/* TODO: fix function to read decimals
+ *
+*/
+
 // returns: first whole num from index (i) 
 //      stops until non-numeric char
 // returns: zero when no number is found
