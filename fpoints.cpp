@@ -274,27 +274,29 @@ bool try_evaluate(double a, double b, char operation, double* result) {
     return false;
 }
 
-bool try_evaluate_chop(double a, double b, char operation, double* result, int chop) {
-    a = get_chop(a, chop);
-    b = get_chop(b, chop);
+double chop_evaluate(double a, double b, char oper, int sig) {
+    a = get_chop(a, sig);
+    b = get_chop(b, sig);
 
-    if('+' == operation) {
-        *result = get_chop(a + b, chop);
-    } else if('-' == operation) {
-        *result = get_chop(a - b, chop);
-    } else if('*' == operation) {
-        *result = get_chop(a * b, chop);
-    } else if('/' == operation) {
+    double result;
+
+    if('+' == oper) {     
+        result = a + b;
+    } else if('-' == oper) {
+        result = a - b;
+    } else if('*' == oper) {
+        result = a * b;
+    } else if('/' == oper) {
         if(b == 0) {
-            throw std::runtime_error("err: division by zero");
+            throw std::runtime_error("Division by Zero");
         }
-    
-        *result = get_chop(a / b, chop);
+
+        result = a / b;
     } else {
-        return false;
+        result = 0;
     }
     
-    return true;
+    return get_chop(result, sig);
 }
 
 void remove_whitespace(std::string* str) {
