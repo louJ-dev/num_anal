@@ -1,4 +1,5 @@
 #include<bits/stdc++.h>
+#include<iomanip>
 
 std::string decimal_to_binary(double n) {
     if(0 == n) {
@@ -123,7 +124,6 @@ double ieee_to_decimal(std::string binary) {
     long double mult = 2.0;
     for(char b : binary.substr(12, 51)) {
         fraction += (b - '0') * (1.0 / mult);
-        // std::cout << std::to_string(fraction) << '\n';
         mult *= 2.0;
     }
 
@@ -214,7 +214,7 @@ int get_precedence(char operation) {
 */
 
 // returns: first whole num from index (i) 
-//      stops until non-numeric char
+//          stops until non-numeric char
 // returns: zero when no number is found
 double get_num_from_index(int i, std::string s, int *length) { 
     int sign = 1;
@@ -235,6 +235,7 @@ double get_num_from_index(int i, std::string s, int *length) {
     
     if(i < s.length() && '.' == s[i]) {
         i++;
+        len++;
         
         double placement = 0.1;
         
@@ -243,6 +244,7 @@ double get_num_from_index(int i, std::string s, int *length) {
             placement /= 10;
             
             i++;
+            len++;
         }
     }
 
@@ -251,22 +253,24 @@ double get_num_from_index(int i, std::string s, int *length) {
     return num * sign;
 }
 
-bool try_evaluate(int a, int b, char operation, double* result) {
+bool try_evaluate(double a, double b, char operation, double* result) {
+    const int sig_dig = 14;
+
     if('+' == operation) {
-        *result = a + b;
+        *result = get_chop(a + b, sig_dig);
         return true;
     } else if('-' == operation) {
-        *result = a - b;
+        *result = get_chop(a - b, sig_dig);
         return true;
     } else if('*' == operation) {
-        *result = a * b;
+        *result = get_chop(a * b, sig_dig);
         return true;
     } else if('/' == operation) {
         if(b == 0) {
             throw std::runtime_error("err: division by zero");
         }
 
-        *result = a / b;
+        *result = get_chop(a / b, sig_dig);
         return true;
     }
 
@@ -278,10 +282,10 @@ std::string remove_whitespace(std::string str) {
     return str;
 }
 
-int solve_expression(std::string expr) {
+double solve_expression(std::string expr) {
     expr = remove_whitespace(expr);
 
-    std::stack<int> nums;
+    std::stack<double> nums;
     std::stack<char> oper;
 
     int i = 0;
@@ -303,14 +307,14 @@ int solve_expression(std::string expr) {
                 i += num_len - 1;
             } else {
                 while(!oper.empty() && get_precedence(oper.top()) >= get_precedence(expr[i])) {
-                    int operandB = nums.top();
+                    double operandB = nums.top();
                     nums.pop();
-                    int operandA = nums.top();
+                    double operandA = nums.top();
                     nums.pop();
                     char operation = oper.top();
                     oper.pop();
 
-                    int result;
+                    double result;
                     if(try_evaluate(operandA, operandB, operation, &result)) {
                         nums.push(result);
                     }
@@ -328,21 +332,21 @@ int solve_expression(std::string expr) {
         // right parethesis
         else if(expr[i] == ')') {
             while(!oper.empty() && oper.top() != '(') {
-                int operandB = nums.top();
+                double operandB = nums.top();
                 nums.pop();
-                int operandA = nums.top();
+                double operandA = nums.top();
                 nums.pop();
                 char operation = oper.top();
                 oper.pop();
 
-                int result;
+                double result;
                 if(try_evaluate(operandA, operandB, operation, &result)) {
                     nums.push(result);
                 } else {
                     nums.push(0);
                 }
             }
-            
+           
             if(!oper.empty() && oper.top() == '(') {
                 oper.pop();
             }
@@ -352,14 +356,14 @@ int solve_expression(std::string expr) {
     }
 
     while(!oper.empty()) {
-        int operandB = nums.top();
+        double operandB = nums.top();
         nums.pop();
-        int operandA = nums.top();
+        double operandA = nums.top();
         nums.pop();
         char operation = oper.top();
         oper.pop();
 
-        int result;
+        double result;
         if(try_evaluate(operandA, operandB, operation, &result)) {
             nums.push(result);
         } else {
@@ -368,9 +372,73 @@ int solve_expression(std::string expr) {
     }
 
     // last number in stack is the answer
-    return nums.top();
+    return get_chop(nums.top(), 15);
 }
 
 int main() {
+    std::string expressions[20] = {
+        "45.67 * 2.3 + 18.92 / 4.4",
+        "(100.5 - 45.22) * 1.5 / 0.5",
+        "12.12 * 12.12 - 140.45",
+        "88.88 / 2.2 + 9.99 * 3.0",
+        "15.5 * (2.2 + 3.8) / 0.25",
+        "0.75 * 0.25 + 1.25 / 0.5",
+        "500.25 - (125.5 * 2.4)",
+        "9.81 * 5.5 / 1.1 + 14.2",
+        "102.4 / 3.2 * 1.5 - 8.8",
+        "((12.5 + 7.5) * 3.2) / 0.8",
+        "0.123 * 1000 - 45.67",
+        "250.5 / 0.5 * 0.2 + 15.75",
+        "14.4 * 1.2 + 13.3 / 0.7",
+        "(99.99 / 3.33) * 1.1 - 2.2",
+        "4.5 * 4.5 + 3.2 * 3.2",
+        "1000.0 - (450.55 / 5.0)",
+        "6.25 * 8.0 / 0.4 + 12.5",
+        "15.75 + 14.25 - (5.5 * 2.0)",
+        "0.5 * (120.4 / 4.0) + 18.9",
+        "75.25 / 0.25 - 200.5"
+    };
+
+    double answers[20] = {
+        109.341,  
+        165.84,  
+        6.4444, 
+        70.37, 
+        372.0, 
+        2.6875,
+        199.05,
+        63.25,
+        39.2, 
+        80.0, 
+        77.33,
+        115.95,  
+        36.28,   
+        30.8,    
+        30.49,   
+        909.89,  
+        137.5,  
+        19.0,   
+        33.95,  
+        100.5   
+    };
+
+    for(int i = 0; i < 20; i++) {
+        std::string exp = expressions[i];
+        double answer = solve_expression(exp);
+        
+        std::string verdict;
+        std::stringstream message;
+    
+        if(answer == answers[i]) {
+            verdict = "pass... ";
+        } else {
+            verdict = "fail... ";
+            message << " should be " << answer;
+        }
+
+
+        std::cout  << verdict << exp << " -> " << answer << message.str() << '\n';
+    }
+
     return 0; 
 }
