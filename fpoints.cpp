@@ -269,16 +269,16 @@ bool TryEvaluate(int operandA, int operandB, char operation, int *result) {
     return false;
 }
 
-string RemoveWhitespace(string str) {
+string RemoveWhitespace(std::string str) {
     str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end()); 
     return str;
 }
 
-int SolveExpression(string expr) {
+int SolveExpression(sts::string expr) {
     expr = RemoveWhitespace(expr);
 
-    stack<int> nums;
-    stack<char> oper;
+    std::stack<int> nums;
+    std::stack<char> oper;
 
     int i = 0;
     while(i < expr.length()) {
