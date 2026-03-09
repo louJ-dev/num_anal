@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Expression Evaluator</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f3f4f6;
+            margin: 0;
+        }
+        .calculator-container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 320px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+        }
+        input[type="text"]:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        button {
+            padding: 12px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #2563eb;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #1f2937;
+            min-height: 28px;
+            word-wrap: break-word;
+        }
+        .error {
+            color: #ef4444 !important;
+            font-size: 16px !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator-container">
+        <h2>Math Evaluator</h2>
+        <input type="text" id="expressionInput" placeholder="e.g., 2 + 2 * (3^2)">
+        <button onclick="calculate()">Calculate</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function calculate() {
+            const inputField = document.getElementById('expressionInput');
+            const resultDiv = document.getElementById('result');
+            const expression = inputField.value;
+
+            // Check if the input is empty
+            if (!expression.trim()) {
+                resultDiv.textContent = 'Please enter an expression.';
+                resultDiv.className = 'error';
+                return;
+            }
+
+            try {
+                // Use math.evaluate() to safely parse and solve the math
+                const result = math.evaluate(expression);
+                
+                // Check if the result is valid (prevents weird outputs)
+                if (result === undefined || typeof result === 'function') {
+                    throw new Error("Invalid");
+                }
+
+                // Format long decimals to keep the UI clean
+                const formattedResult = math.format(result, { precision: 14 });
+                
+                resultDiv.textContent = `Result: ${formattedResult}`;
+                resultDiv.className = ''; // Remove error styling
+            } catch (error) {
+                // Catch typos like "2 + * 3"
+                resultDiv.textContent = 'Invalid math expression.';
+                resultDiv.className = 'error';
+            }
+        }
+
+        // Quality of life: Allow the user to press 'Enter' to calculate
+        document.getElementById('expressionInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                calculate();
+            }
+        });
+    </script>
+
+</body>
+</html>
