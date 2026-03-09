@@ -90,7 +90,7 @@ std::string decimal_to_ieee(double n) {
 
 double binary_to_decimal(std::string binary) {
     int i = 0;
-    int sign = ('-' == binary[i++]) * -1;
+    int sign = ('-' == binary[i++]) ? -1 : 1;
     
     while(i < binary.length() && '.' != binary[i]) {
         i++;
@@ -117,16 +117,17 @@ double binary_to_decimal(std::string binary) {
 
 double ieee_to_decimal(std::string binary) {
     int sign = ('1' == binary[0]) ? -1 : 1;
-    int e = binary_to_decimal(binary.substr(1, 11));
-    double fraction = 1.0;
+    int e = (int)binary_to_decimal(binary.substr(1, 11));
+    double fraction = 0.0 + ((e != 0) * 1);
     
-    long double mult = 1.0;
+    long double mult = 2.0;
     for(char b : binary.substr(12, 51)) {
-        fraction += (b - '0') / mult;
+        fraction += (b - '0') * (1.0 / mult);
+        // std::cout << std::to_string(fraction) << '\n';
         mult *= 2.0;
     }
 
-    return (double)sign * (double)(std::pow(2, e - 1023)) * fraction;
+    return sign * std::pow(2, (e - 1023)) * fraction;
 }
 
 double get_chop(double n, int sdigit) {
@@ -164,6 +165,185 @@ double chop_divide_float(double a, double b, int chop) {
     double ca = get_chop(a, chop);
     double cb = get_chop(b, chop); 
     return get_chop(ca / cb, chop);
+}
+
+bool IsDigit(char c) {
+    if(c >= '0' && c <= '9') {
+        return true;
+    }
+
+    return false;
+}
+
+bool IsOperator(char c) {
+    if(c == '+' ||
+        c == '-' ||
+        c == '/' ||
+        c == '*' ||
+        c == '^' ||
+        c == '%') {
+        return true;    
+    }
+
+    return false;
+}
+
+int GetPrecedence(char operation) {
+    if(operation == '+' || operation == '-') {
+        return 2;
+    } else if(operation == '*' || operation == '/') {
+        return 3;
+    } else if(operation == '^') {
+        return 4;
+    } else {
+        return -1;
+    }
+}
+
+// returns: first whole num from index (i) 
+//      stops until non-numeric char
+// returns: zero when no number is found
+int GetNumFromIndex(int i, string s, int *length) { 
+    int sign = 1;
+    int len = 0;
+    
+    if(s[i] == '-') {
+        sign = -1;
+        len++;
+        i++;
+    }
+
+    int num = 0;
+    while(i < s.length() && IsDigit(s[i])) {
+        num = (num * 10) + (s[i] - '0');
+        len++;
+        i++;   
+    }
+    
+    *length = len;
+
+    return num * sign;
+}
+
+bool TryEvaluate(int operandA, int operandB, char operation, int *result) {
+    if(operation == '+') {
+        *result = operandA + operandB;
+        return true;
+    } else if(operation == '-') {
+        *result = operandA - operandB;
+        return true;
+    } else if(operation == '*') {
+        *result = operandA * operandB;
+        return true;
+    } else if(operation == '/') {
+        if(operandB == 0) {
+            *result = NULL;
+            return false;
+        }
+
+        *result = operandA / operandB;
+        return true;
+    }
+
+    return false;
+}
+
+string RemoveWhitespace(string str) {
+    str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end()); 
+    return str;
+}
+
+int SolveExpression(string expr) {
+    expr = RemoveWhitespace(expr);
+
+    stack<int> nums;
+    stack<char> oper;
+
+    int i = 0;
+    while(i < expr.length()) {
+        // Digit 
+        if(IsDigit(expr[i])) {
+            int num_len;
+            nums.push(GetNumFromIndex(i, expr, &num_len));
+            i += num_len - 1;
+        } 
+
+        // Operator (+, -, *, /, ^)
+        else if(IsOperator(expr[i])) {
+            
+            // check if '-' is a start of a negative number or is an operator 
+            if(expr[i] == '-' && (i == 0 || IsOperator(expr[i-1]) || expr[i-1] == '(') && IsDigit(expr[i+1])) {
+                int num_len;
+                nums.push(GetNumFromIndex(i, expr, &num_len));
+                i += num_len - 1;
+            } else {
+                while(!oper.empty() && GetPrecedence(oper.top()) >= GetPrecedence(expr[i])) {
+                    int operandB = nums.top();
+                    nums.pop();
+                    int operandA = nums.top();
+                    nums.pop();
+                    char operation = oper.top();
+                    oper.pop();
+
+                    int result;
+                    if(TryEvaluate(operandA, operandB, operation, &result)) {
+                        nums.push(result);
+                    }
+                }
+                
+                oper.push(expr[i]);
+            }
+        } 
+
+        // Left Parethesis
+        else if(expr[i] == '(') {
+            oper.push('(');
+        } 
+
+        // right parethesis
+        else if(expr[i] == ')') {
+            while(!oper.empty() && oper.top() != '(') {
+                int operandB = nums.top();
+                nums.pop();
+                int operandA = nums.top();
+                nums.pop();
+                char operation = oper.top();
+                oper.pop();
+
+                int result;
+                if(TryEvaluate(operandA, operandB, operation, &result)) {
+                    nums.push(result);
+                } else {
+                    nums.push(0);
+                }
+            }
+            
+            if(!oper.empty() && oper.top() == '(') {
+                oper.pop();
+            }
+        } 
+
+        i++;
+    }
+
+    while(!oper.empty()) {
+        int operandB = nums.top();
+        nums.pop();
+        int operandA = nums.top();
+        nums.pop();
+        char operation = oper.top();
+        oper.pop();
+
+        int result;
+        if(TryEvaluate(operandA, operandB, operation, &result)) {
+            nums.push(result);
+        } else {
+            nums.push(0);
+        }
+    }
+
+    // last number in stack is the answer
+    return nums.top();
 }
 
 int main() {
