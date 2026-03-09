@@ -293,7 +293,7 @@ double chop_evaluate(double a, double b, char oper, int sig) {
 
         result = a / b;
     } else {
-        result = 0;
+        throw std::runtime_error("Invalid operation");
     }
     
     return get_chop(result, sig);
