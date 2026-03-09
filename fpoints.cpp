@@ -207,11 +207,6 @@ int get_precedence(char operation) {
     }
 }
 
-
-/* TODO: fix function to read decimals
- *
-*/
-
 // returns: first whole num from index (i) 
 //          stops until non-numeric char
 // returns: zero when no number is found
@@ -251,6 +246,13 @@ double get_num_from_index(int i, std::string s, int *length) {
 
     return num * sign;
 }
+
+
+/* TODO: remake this
+ *      make it more simpler
+ *      use better error handling
+ *      avoid the use of pointers for result
+ */
 
 bool try_evaluate(double a, double b, char operation, double* result) {
     if('+' == operation) {
