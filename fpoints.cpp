@@ -1,5 +1,4 @@
 #include<bits/stdc++.h>
-#include<iomanip>
 
 std::string decimal_to_binary(double n) {
     if(0 == n) {
@@ -254,27 +253,49 @@ double get_num_from_index(int i, std::string s, int *length) {
 }
 
 bool try_evaluate(double a, double b, char operation, double* result) {
-    const int sig_dig = 14;
-
     if('+' == operation) {
-        *result = get_chop(a + b, sig_dig);
+        *result = a + b;
         return true;
     } else if('-' == operation) {
-        *result = get_chop(a - b, sig_dig);
+        *result = a - b;
         return true;
     } else if('*' == operation) {
-        *result = get_chop(a * b, sig_dig);
+        *result = a * b;
         return true;
     } else if('/' == operation) {
         if(b == 0) {
             throw std::runtime_error("err: division by zero");
         }
 
-        *result = get_chop(a / b, sig_dig);
+        *result = a / b;
         return true;
     }
 
     return false;
+}
+
+bool try_evaluate_chop(double a, double b, char operation, double* result, int chop) {
+
+    a = get_chop(a, chop);
+    b = get_chop(b, chop);
+
+    if('+' == operation) {
+        *result = get_chop(a + b, chop);
+    } else if('-' == operation) {
+        *result = get_chop(a - b, chop);
+    } else if('*' == operation) {
+        *result = get_chop(a * b, chop);
+    } else if('/' == operation) {
+        if(b == 0) {
+            throw std::runtime_error("err: division by zero");
+        }
+    
+        *result = get_chop(a / b, chop);
+    } else {
+        return false;
+    }
+    
+    return true;
 }
 
 std::string remove_whitespace(std::string str) {
@@ -283,6 +304,9 @@ std::string remove_whitespace(std::string str) {
 }
 
 double solve_expression(std::string expr) {
+    
+    const int chop = 8;
+
     expr = remove_whitespace(expr);
 
     std::stack<double> nums;
@@ -315,7 +339,7 @@ double solve_expression(std::string expr) {
                     oper.pop();
 
                     double result;
-                    if(try_evaluate(operandA, operandB, operation, &result)) {
+                    if(try_evaluate_chop(operandA, operandB, operation, &result, chop)) {
                         nums.push(result);
                     }
                 }
@@ -340,7 +364,7 @@ double solve_expression(std::string expr) {
                 oper.pop();
 
                 double result;
-                if(try_evaluate(operandA, operandB, operation, &result)) {
+                if(try_evaluate_chop(operandA, operandB, operation, &result, chop)) {
                     nums.push(result);
                 } else {
                     nums.push(0);
@@ -364,7 +388,7 @@ double solve_expression(std::string expr) {
         oper.pop();
 
         double result;
-        if(try_evaluate(operandA, operandB, operation, &result)) {
+        if(try_evaluate_chop(operandA, operandB, operation, &result, chop)) {
             nums.push(result);
         } else {
             nums.push(0);
@@ -372,7 +396,9 @@ double solve_expression(std::string expr) {
     }
 
     // last number in stack is the answer
-    return get_chop(nums.top(), 15);
+        
+    int round = (int)(nums.top() * 100000);
+    return get_chop(nums.top(), 5);
 }
 
 int main() {
@@ -422,6 +448,9 @@ int main() {
         100.5   
     };
 
+    // std::cout << std::fixed << std::setprecision(15);
+
+
     for(int i = 0; i < 20; i++) {
         std::string exp = expressions[i];
         double answer = solve_expression(exp);
@@ -433,11 +462,10 @@ int main() {
             verdict = "pass... ";
         } else {
             verdict = "fail... ";
-            message << " should be " << answer;
+            message << " should be " << answers[i];
         }
 
-
-        std::cout  << verdict << exp << " -> " << answer << message.str() << '\n';
+        std::cout << verdict << "-> " << answer << message.str() << '\n';
     }
 
     return 0; 
