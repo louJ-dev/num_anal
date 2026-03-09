@@ -251,23 +251,22 @@ double get_num_from_index(int i, std::string s, int *length) {
     return num * sign;
 }
 
-bool try_evaluate(int operandA, int operandB, char operation, int *result) {
-    if(operation == '+') {
-        *result = operandA + operandB;
+bool try_evaluate(int a, int b, char operation, double* result) {
+    if('+' == operation) {
+        *result = a + b;
         return true;
-    } else if(operation == '-') {
-        *result = operandA - operandB;
+    } else if('-' == operation) {
+        *result = a - b;
         return true;
-    } else if(operation == '*') {
-        *result = operandA * operandB;
+    } else if('*' == operation) {
+        *result = a * b;
         return true;
-    } else if(operation == '/') {
-        if(operandB == 0) {
-            *result = NULL;
-            return false;
+    } else if('/' == operation) {
+        if(b == 0) {
+            throw std::runtime_error("err: division by zero");
         }
 
-        *result = operandA / operandB;
+        *result = a / b;
         return true;
     }
 
