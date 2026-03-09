@@ -1,6 +1,6 @@
 #include<bits/stdc++.h>
 
-std::string decimal_to_binary(long double n) {
+std::string decimal_to_binary(double n) {
     if(0 == n) {
         return "0";
     }
@@ -12,7 +12,7 @@ std::string decimal_to_binary(long double n) {
     n = std::fabs(n);
 
     int whole = (int)n;
-    long double decimal = n - whole;
+    double decimal = n - whole;
 
     std::string result = "";
     while(whole > 0) {
@@ -47,7 +47,7 @@ std::string decimal_to_binary(long double n) {
     return result;
 }
 
-std::string decimal_to_ieee(long double n) {
+std::string decimal_to_ieee(double n) {
     if(0 == n) {
         return "0000000000000000000000000000000000000000000000000000000000000000";
     }
@@ -88,7 +88,7 @@ std::string decimal_to_ieee(long double n) {
     return sign + ebinary + mantissa;
 }
 
-long double binary_to_decimal(std::string binary) {
+double binary_to_decimal(std::string binary) {
     int i = 0;
     int sign = ('-' == binary[i++]) ? -1 : 1;
     
@@ -105,22 +105,22 @@ long double binary_to_decimal(std::string binary) {
     
     i++;
 
-    long double div = 2.0, decimal = 0;
+    double div = 2.0, decimal = 0;
     while(i < binary.length()) {
         decimal += (binary[i] - '0') * (1.0 / div);
         div *= 2.0;
         i++;
     }
 
-    return (long double)sign * ((long double)whole + decimal);
+    return (double)sign * ((double)whole + decimal);
 }
 
-long double ieee_to_decimal(std::string binary) {
+double ieee_to_decimal(std::string binary) {
     int sign = ('1' == binary[0]) ? -1 : 1;
     int e = (int)binary_to_decimal(binary.substr(1, 11));
-    long double fraction = 0.0 + ((e != 0) * 1);
+    double fraction = 0.0 + ((e != 0) * 1);
     
-    long double mult = 2.0;
+    double mult = 2.0;
     for(char b : binary.substr(12, 51)) {
         fraction += (b - '0') * (1.0 / mult);
         mult *= 2.0;
@@ -129,48 +129,48 @@ long double ieee_to_decimal(std::string binary) {
     return sign * std::pow(2, (e - 1023)) * fraction;
 }
 
-long double get_chop(long double n, int sdigit) {
+double get_chop(double n, int sdigit) {
     if(0.0 == n || !std::isfinite(n)) {
         return n;
     }
 
-    long double scale = std::pow(10.0, std::floor(std::log10(std::fabs(n))) - sdigit + 1);
-    long double scaled = n / scale;
-    long double chop = std::trunc(scaled);
-    long double chopped = chop * scale;
+    double scale = std::pow(10.0, std::floor(std::log10(std::fabs(n))) - sdigit + 1);
+    double scaled = n / scale;
+    double chop = std::trunc(scaled);
+    double chopped = chop * scale;
 
     return chopped;
 }
 
-long double chop_add_float(long double a, long double b, int chop) {
-    long double ca = get_chop(a, chop);
-    long double cb = get_chop(b, chop); 
+double chop_add_float(double a, double b, int chop) {
+    double ca = get_chop(a, chop);
+    double cb = get_chop(b, chop); 
     return get_chop(ca + cb, chop);
 }
 
-long double chop_subtract_float(long double a, long double b, int chop) {
-    long double ca = get_chop(a, chop);
-    long double cb = get_chop(b, chop); 
+double chop_subtract_float(double a, double b, int chop) {
+    double ca = get_chop(a, chop);
+    double cb = get_chop(b, chop); 
     return get_chop(ca - cb, chop);
 }
 
-long double chop_multilpy_float(long double a, long double b, int chop) {
-    long double ca = get_chop(a, chop);
-    long double cb = get_chop(b, chop); 
+double chop_multilpy_float(double a, double b, int chop) {
+    double ca = get_chop(a, chop);
+    double cb = get_chop(b, chop); 
     return get_chop(ca + cb, chop);
 }
 
-long double chop_divide_float(long double a, long double b, int chop) {
-    long double ca = get_chop(a, chop);
-    long double cb = get_chop(b, chop); 
+double chop_divide_float(double a, double b, int chop) {
+    double ca = get_chop(a, chop);
+    double cb = get_chop(b, chop); 
     return get_chop(ca / cb, chop);
 }
 
-long double chop_pow(long double b, int pow, int chop) {
+double chop_pow(double b, int pow, int chop) {
     return get_chop(std::pow(b, pow), chop);
 }
 
-long double chop_sqrts(long double n, int chop) {
+double chop_sqrts(double n, int chop) {
     return get_chop(std::sqrt(n), chop);
 }
 
@@ -215,7 +215,7 @@ int get_precedence(char operation) {
 // returns: first whole num from index (i) 
 //          stops until non-numeric char
 // returns: zero when no number is found
-long double get_num_from_index(int i, std::string s, int *length) { 
+double get_num_from_index(int i, std::string s, int *length) { 
     int sign = 1;
     int len = 0;
 
@@ -225,7 +225,7 @@ long double get_num_from_index(int i, std::string s, int *length) {
         i++;
     }
 
-    long double num = 0;
+    double num = 0;
     while(i < s.length() && is_digit(s[i])) {
         num = (num * 10) + (s[i] - '0');
         len++;
@@ -236,10 +236,10 @@ long double get_num_from_index(int i, std::string s, int *length) {
         i++;
         len++;
         
-        long double placement = 0.1;
+        double placement = 0.1;
         
         while(i < s.length() && is_digit(s[i])) {
-            num += ((long double)s[i] - '0') * placement;
+            num += ((double)s[i] - '0') * placement;
             placement /= 10;
             
             i++;
@@ -252,7 +252,7 @@ long double get_num_from_index(int i, std::string s, int *length) {
     return num * sign;
 }
 
-bool try_evaluate(long double a, long double b, char operation, long double* result) {
+bool try_evaluate(double a, double b, char operation, double* result) {
     if('+' == operation) {
         *result = a + b;
         return true;
@@ -274,7 +274,7 @@ bool try_evaluate(long double a, long double b, char operation, long double* res
     return false;
 }
 
-bool try_evaluate_chop(long double a, long double b, char operation, long double* result, int chop) {
+bool try_evaluate_chop(double a, double b, char operation, double* result, int chop) {
 
     a = get_chop(a, chop);
     b = get_chop(b, chop);
@@ -298,18 +298,14 @@ bool try_evaluate_chop(long double a, long double b, char operation, long double
     return true;
 }
 
-std::string remove_whitespace(std::string str) {
-    str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end()); 
-    return str;
+void remove_whitespace(std::string* str) {
+    str->erase(std::remove_if(str->begin(), str->end(), ::isspace), str->end()); 
 }
 
-long double solve_expression(std::string expr) {
-    
-    const int chop = 8;
+double solve_expression(std::string expr) {
+    remove_whitespace(&expr);
 
-    expr = remove_whitespace(expr);
-
-    std::stack<long double> nums;
+    std::stack<double> nums;
     std::stack<char> oper;
 
     int i = 0;
@@ -331,14 +327,14 @@ long double solve_expression(std::string expr) {
                 i += num_len - 1;
             } else {
                 while(!oper.empty() && get_precedence(oper.top()) >= get_precedence(expr[i])) {
-                    long double operandB = nums.top();
+                    double operandB = nums.top();
                     nums.pop();
-                    long double operandA = nums.top();
+                    double operandA = nums.top();
                     nums.pop();
                     char operation = oper.top();
                     oper.pop();
 
-                    long double result;
+                    double result;
                     if(try_evaluate(operandA, operandB, operation, &result)) {
                         nums.push(result);
                     }
@@ -356,14 +352,14 @@ long double solve_expression(std::string expr) {
         // right parethesis
         else if(expr[i] == ')') {
             while(!oper.empty() && oper.top() != '(') {
-                long double operandB = nums.top();
+                double operandB = nums.top();
                 nums.pop();
-                long double operandA = nums.top();
+                double operandA = nums.top();
                 nums.pop();
                 char operation = oper.top();
                 oper.pop();
 
-                long double result;
+                double result;
                 if(try_evaluate(operandA, operandB, operation, &result)) {
                     nums.push(result);
                 } else {
@@ -380,14 +376,14 @@ long double solve_expression(std::string expr) {
     }
 
     while(!oper.empty()) {
-        long double operandB = nums.top();
+        double operandB = nums.top();
         nums.pop();
-        long double operandA = nums.top();
+        double operandA = nums.top();
         nums.pop();
         char operation = oper.top();
         oper.pop();
 
-        long double result;
+        double result;
         if(try_evaluate(operandA, operandB, operation, &result)) {
             nums.push(result);
         } else {
@@ -424,7 +420,7 @@ int main() {
         "75.25 / 0.25 - 200.5"
     };
 
-    long double answers[20] = {
+    double answers[20] = {
         109.341,  
         165.84,  
         6.4444, 
@@ -452,7 +448,7 @@ int main() {
 
     for(int i = 0; i < 20; i++) {
         std::string exp = expressions[i];
-        long double answer = solve_expression(exp);
+        double answer = solve_expression(exp);
         
         std::string verdict;
         std::stringstream message;
