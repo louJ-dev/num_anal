@@ -167,6 +167,14 @@ double chop_divide_float(double a, double b, int chop) {
     return get_chop(ca / cb, chop);
 }
 
+double chop_pow(double b, int pow) {
+    return get_chop(std::pow(b, pow));
+}
+
+double chop_sqrts(double n) {
+    return get_chop(std::sqrt(n));
+}
+
 bool IsDigit(char c) {
     if(c >= '0' && c <= '9') {
         return true;
