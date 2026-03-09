@@ -275,7 +275,6 @@ bool try_evaluate(double a, double b, char operation, double* result) {
 }
 
 bool try_evaluate_chop(double a, double b, char operation, double* result, int chop) {
-
     a = get_chop(a, chop);
     b = get_chop(b, chop);
 
@@ -310,14 +309,14 @@ double solve_expression(std::string expr) {
 
     int i = 0;
     while(i < expr.length()) {
-        // Digit 
+        // digit 
         if(is_digit(expr[i])) {
             int num_len;
             nums.push(get_num_from_index(i, expr, &num_len));
             i += num_len - 1;
         } 
 
-        // Operator (+, -, *, /, ^)
+        // operator (+, -, *, /, ^)
         else if(is_operator(expr[i])) {
             
             // check if '-' is a start of a negative number or is an operator 
@@ -344,12 +343,12 @@ double solve_expression(std::string expr) {
             }
         } 
 
-        // Left Parethesis
+        // left parenthesis
         else if(expr[i] == '(') {
             oper.push('(');
         } 
 
-        // right parethesis
+        // right parenthesis
         else if(expr[i] == ')') {
             while(!oper.empty() && oper.top() != '(') {
                 double operandB = nums.top();
@@ -391,9 +390,7 @@ double solve_expression(std::string expr) {
         }
     }
 
-    // last number in stack is the answer
-        
-    return nums.top();
+    return nums.top(); // last number in stack is the answer 
 }
 
 int main() {
@@ -460,7 +457,7 @@ int main() {
             message << " should be " << answers[i];
         }
 
-        std::cout << verdict << "-> " << answer << message.str() << '\n';
+        std::cout << verdict << exp << " -> " << answer << message.str() << '\n';
     }
 
     return 0; 
