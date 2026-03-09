@@ -167,15 +167,15 @@ double chop_divide_float(double a, double b, int chop) {
     return get_chop(ca / cb, chop);
 }
 
-double chop_pow(double b, int pow) {
-    return get_chop(std::pow(b, pow));
+double chop_pow(double b, int pow, int chop) {
+    return get_chop(std::pow(b, pow), chop);
 }
 
-double chop_sqrts(double n) {
-    return get_chop(std::sqrt(n));
+double chop_sqrts(double n, int chop) {
+    return get_chop(std::sqrt(n), chop);
 }
 
-bool IsDigit(char c) {
+bool is_digit(char c) {
     if(c >= '0' && c <= '9') {
         return true;
     }
@@ -183,7 +183,7 @@ bool IsDigit(char c) {
     return false;
 }
 
-bool IsOperator(char c) {
+bool is_operator(char c) {
     if(c == '+' ||
         c == '-' ||
         c == '/' ||
@@ -196,7 +196,7 @@ bool IsOperator(char c) {
     return false;
 }
 
-int GetPrecedence(char operation) {
+int get_precedence(char operation) {
     if(operation == '+' || operation == '-') {
         return 2;
     } else if(operation == '*' || operation == '/') {
@@ -216,7 +216,7 @@ int GetPrecedence(char operation) {
 // returns: first whole num from index (i) 
 //      stops until non-numeric char
 // returns: zero when no number is found
-double GetNumFromIndex(int i, std::string s, int *length) { 
+double get_num_from_index(int i, std::string s, int *length) { 
     int sign = 1;
     int len = 0;
 
@@ -227,7 +227,7 @@ double GetNumFromIndex(int i, std::string s, int *length) {
     }
 
     double num = 0;
-    while(i < s.length() && IsDigit(s[i])) {
+    while(i < s.length() && is_digit(s[i])) {
         num = (num * 10) + (s[i] - '0');
         len++;
         i++;   
@@ -238,7 +238,7 @@ double GetNumFromIndex(int i, std::string s, int *length) {
         
         double placement = 0.1;
         
-        while(i < s.length() && IsDigit(s[i])) {
+        while(i < s.length() && is_digit(s[i])) {
             num += ((double)s[i] - '0') * placement;
             placement /= 10;
             
@@ -251,7 +251,7 @@ double GetNumFromIndex(int i, std::string s, int *length) {
     return num * sign;
 }
 
-bool TryEvaluate(int operandA, int operandB, char operation, int *result) {
+bool try_evaluate(int operandA, int operandB, char operation, int *result) {
     if(operation == '+') {
         *result = operandA + operandB;
         return true;
@@ -274,13 +274,13 @@ bool TryEvaluate(int operandA, int operandB, char operation, int *result) {
     return false;
 }
 
-string RemoveWhitespace(std::string str) {
+std::string remove_whitespace(std::string str) {
     str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end()); 
     return str;
 }
 
-int SolveExpression(sts::string expr) {
-    expr = RemoveWhitespace(expr);
+int solve_expression(std::string expr) {
+    expr = remove_whitespace(expr);
 
     std::stack<int> nums;
     std::stack<char> oper;
@@ -288,22 +288,22 @@ int SolveExpression(sts::string expr) {
     int i = 0;
     while(i < expr.length()) {
         // Digit 
-        if(IsDigit(expr[i])) {
+        if(is_digit(expr[i])) {
             int num_len;
-            nums.push(GetNumFromIndex(i, expr, &num_len));
+            nums.push(get_num_from_index(i, expr, &num_len));
             i += num_len - 1;
         } 
 
         // Operator (+, -, *, /, ^)
-        else if(IsOperator(expr[i])) {
+        else if(is_operator(expr[i])) {
             
             // check if '-' is a start of a negative number or is an operator 
-            if(expr[i] == '-' && (i == 0 || IsOperator(expr[i-1]) || expr[i-1] == '(') && IsDigit(expr[i+1])) {
+            if(expr[i] == '-' && (i == 0 || is_operator(expr[i-1]) || expr[i-1] == '(') && is_digit(expr[i+1])) {
                 int num_len;
-                nums.push(GetNumFromIndex(i, expr, &num_len));
+                nums.push(get_num_from_index(i, expr, &num_len));
                 i += num_len - 1;
             } else {
-                while(!oper.empty() && GetPrecedence(oper.top()) >= GetPrecedence(expr[i])) {
+                while(!oper.empty() && get_precedence(oper.top()) >= get_precedence(expr[i])) {
                     int operandB = nums.top();
                     nums.pop();
                     int operandA = nums.top();
@@ -312,7 +312,7 @@ int SolveExpression(sts::string expr) {
                     oper.pop();
 
                     int result;
-                    if(TryEvaluate(operandA, operandB, operation, &result)) {
+                    if(try_evaluate(operandA, operandB, operation, &result)) {
                         nums.push(result);
                     }
                 }
@@ -337,7 +337,7 @@ int SolveExpression(sts::string expr) {
                 oper.pop();
 
                 int result;
-                if(TryEvaluate(operandA, operandB, operation, &result)) {
+                if(try_evaluate(operandA, operandB, operation, &result)) {
                     nums.push(result);
                 } else {
                     nums.push(0);
@@ -361,7 +361,7 @@ int SolveExpression(sts::string expr) {
         oper.pop();
 
         int result;
-        if(TryEvaluate(operandA, operandB, operation, &result)) {
+        if(try_evaluate(operandA, operandB, operation, &result)) {
             nums.push(result);
         } else {
             nums.push(0);
@@ -373,18 +373,5 @@ int SolveExpression(sts::string expr) {
 }
 
 int main() {
-   
-    std::cout << decimal_to_ieee(1) << '\n';
-    std::cout << decimal_to_ieee(0) << '\n';
-    std::cout << decimal_to_ieee(-1) << '\n';
-    std::cout << decimal_to_ieee(1.5) << '\n';
-    std::cout << decimal_to_ieee(-1.5) << '\n';
-
-    std::cout << ieee_to_decimal("0011111111110000000000000000000000000000000000000000000000000000") << '\n';
-    std::cout << ieee_to_decimal("0000000000000000000000000000000000000000000000000000000000000000") << '\n';
-    std::cout << ieee_to_decimal("1011111111110000000000000000000000000000000000000000000000000000") << '\n';
-    std::cout << ieee_to_decimal("0011111111111000000000000000000000000000000000000000000000000000") << '\n';
-    std::cout << ieee_to_decimal("1011111111111000000000000000000000000000000000000000000000000000") << '\n';
-
     return 0; 
 }
