@@ -211,23 +211,36 @@ int GetPrecedence(char operation) {
 // returns: first whole num from index (i) 
 //      stops until non-numeric char
 // returns: zero when no number is found
-int GetNumFromIndex(int i, string s, int *length) { 
+double GetNumFromIndex(int i, std::string s, int *length) { 
     int sign = 1;
     int len = 0;
-    
+
     if(s[i] == '-') {
         sign = -1;
         len++;
         i++;
     }
 
-    int num = 0;
+    double num = 0;
     while(i < s.length() && IsDigit(s[i])) {
         num = (num * 10) + (s[i] - '0');
         len++;
         i++;   
     }
     
+    if(i < s.length() && '.' == s[i]) {
+        i++;
+        
+        double placement = 0.1;
+        
+        while(i < s.length() && IsDigit(s[i])) {
+            num += ((double)s[i] - '0') * placement;
+            placement /= 10;
+            
+            i++;
+        }
+    }
+
     *length = len;
 
     return num * sign;
