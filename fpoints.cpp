@@ -1,13 +1,16 @@
 #include<bits/stdc++.h>
 
+#define BIAS 1023            // value set for 64-bit 
+#define EPSILON 1e-12        // threshold 
+#define COMPUTE_PRECISION 12 // used for calculations
+#define DISPLAY_PRECISION 8  // used for outputs
+
 std::string decimal_to_binary(double n) {
     if(0 == n) {
         return "0";
     }
 
-    int sign = 1;
-
-    if(n < 0) sign = -1;
+    int sign = (n < 0) ? -1 : 1;
 
     n = std::fabs(n);
 
@@ -17,9 +20,9 @@ std::string decimal_to_binary(double n) {
     std::string result = "";
     while(whole > 0) {
         if(whole % 2 > 0) {
-            result.insert(0, '1');
+            result.insert(0, 1, '1');
         } else {
-            result.insert(0, '0');
+            result.insert(0, 1, '0');
         }
 
         whole /= 2;
@@ -52,9 +55,7 @@ std::string decimal_to_ieee(double n) {
         return "0000000000000000000000000000000000000000000000000000000000000000";
     }
 
-    std::string sign = "0";
-    if(n < 0) sign = "1";
-    
+    char sign = '0' + (n < 0); 
     std::string binary = decimal_to_binary(std::fabs(n));
 
     int pointIndex = binary.length();
@@ -66,7 +67,7 @@ std::string decimal_to_ieee(double n) {
     }
     
     int e = (pointIndex > 0) ? pointIndex - 1: -1;
-    std::string ebinary = decimal_to_binary(e + 1023);
+    std::string ebinary = decimal_to_binary(e + BIAS);
     if(ebinary.length() < 11) {
         ebinary.insert(0, 11 - ebinary.length(), '0');
     }
@@ -126,7 +127,7 @@ double ieee_to_decimal(std::string binary) {
         mult *= 2.0;
     }
 
-    return sign * std::pow(2, (e - 1023)) * fraction;
+    return sign * std::pow(2, (e - BIAS)) * fraction;
 }
 
 double get_chop(double n, int sdigit) {
