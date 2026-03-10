@@ -11,7 +11,6 @@ std::string decimal_to_binary(double n) {
     }
 
     int sign = (n < 0) ? -1 : 1;
-
     n = std::fabs(n);
 
     int whole = (int)n;
@@ -19,12 +18,7 @@ std::string decimal_to_binary(double n) {
 
     std::string result = "";
     while(whole > 0) {
-        if(whole % 2 > 0) {
-            result.insert(0, 1, '1');
-        } else {
-            result.insert(0, 1, '0');
-        }
-
+        result.insert(0, 1, '0' + (whole % 2 > 0));
         whole /= 2;
     }
 
@@ -43,7 +37,7 @@ std::string decimal_to_binary(double n) {
         }
     }
 
-    if(sign == -1) {
+    if(-1 == sign) {
         result = '-' + result;
     }
 
