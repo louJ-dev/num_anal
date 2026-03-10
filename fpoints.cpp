@@ -342,14 +342,7 @@ double solve_expression(std::string expr) {
                 i += num_len - 1;
             } else {
                 while(!oper.empty() && get_precedence(oper.top()) >= get_precedence(expr[i])) {
-                    double operandB = nums.top();
-                    nums.pop();
-                    double operandA = nums.top();
-                    nums.pop();
-                    char operation = oper.top();
-                    oper.pop();
-
-                    nums.push(evaluate(operandA, operandB, operation));
+                    solve_expression_helper(&nums, &oper); 
                 }
                 
                 oper.push(expr[i]);
@@ -364,14 +357,7 @@ double solve_expression(std::string expr) {
         // right parenthesis
         else if(expr[i] == ')') {
             while(!oper.empty() && oper.top() != '(') {
-                double operandB = nums.top();
-                nums.pop();
-                double operandA = nums.top();
-                nums.pop();
-                char operation = oper.top();
-                oper.pop();
-
-                nums.push(evaluate(operandA, operandB, operation));
+                solve_expression_helper(&nums, &oper); 
             }
            
             if(!oper.empty() && oper.top() == '(') {
@@ -382,15 +368,8 @@ double solve_expression(std::string expr) {
         i++;
     }
 
-    while(!oper.empty(`) {
-        double operandB = nums.top();
-        nums.pop();
-        double operandA = nums.top();
-        nums.pop();
-        char operation = oper.top();
-        oper.pop();
-
-        nums.push(evaluate(operandA, operandB, operation));
+    while(!oper.empty() {
+        solve_expression_helper(&nums, &oper); 
     }
 
     return nums.top(); // last number in stack is the answer 
