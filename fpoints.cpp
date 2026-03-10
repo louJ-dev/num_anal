@@ -298,6 +298,25 @@ void remove_whitespace(std::string* str) {
     str->erase(std::remove_if(str->begin(), str->end(), ::isspace), str->end()); 
 }
 
+void solve_expression_helper(std::stack<double>& nums, std::stack<char>& opers) {
+    if(nums->size() < 2) {
+        throw std::runtime_error("Missing operand");
+    }
+
+    if(opers->empty() || opers->top() == '(') {
+        throw std::runtime_error("Invalid expression");
+    }
+
+    double b = nums->top();
+    nums->pop();
+    double a = nums->top();
+    nums->pop();
+    char o = oper->top();
+    oper->pop();
+
+    nums->push(evaluate(a, b, o));
+}
+
 double solve_expression(std::string expr) {
     remove_whitespace(&expr);
 
@@ -363,7 +382,7 @@ double solve_expression(std::string expr) {
         i++;
     }
 
-    while(!oper.empty()) {
+    while(!oper.empty(`) {
         double operandB = nums.top();
         nums.pop();
         double operandA = nums.top();
