@@ -321,7 +321,7 @@ double solve_expression(std::string expr) {
     remove_whitespace(&expr);
 
     std::stack<double> nums;
-    std::stack<char> oper;
+    std::stack<char> opers;
 
     int i = 0;
     while(i < expr.length()) {
@@ -341,35 +341,35 @@ double solve_expression(std::string expr) {
                 nums.push(get_num_from_index(i, expr, &num_len));
                 i += num_len - 1;
             } else {
-                while(!oper.empty() && get_precedence(oper.top()) >= get_precedence(expr[i])) {
-                    solve_expression_helper(&nums, &oper); 
+                while(!opers.empty() && get_precedence(opers.top()) >= get_precedence(expr[i])) {
+                    solve_expression_helper(&nums, &opers); 
                 }
                 
-                oper.push(expr[i]);
+                opers.push(expr[i]);
             }
         } 
 
         // left parenthesis
         else if(expr[i] == '(') {
-            oper.push('(');
+            opers.push('(');
         } 
 
         // right parenthesis
         else if(expr[i] == ')') {
-            while(!oper.empty() && oper.top() != '(') {
-                solve_expression_helper(&nums, &oper); 
+            while(!opers.empty() && opers.top() != '(') {
+                solve_expression_helper(&nums, &opers); 
             }
            
-            if(!oper.empty() && oper.top() == '(') {
-                oper.pop();
+            if(!opers.empty() && opers.top() == '(') {
+                opers.pop();
             }
         } 
 
         i++;
     }
 
-    while(!oper.empty()) {
-        solve_expression_helper(&nums, &oper); 
+    while(!opers.empty()) {
+        solve_expression_helper(&nums, &opers); 
     }
 
     return nums.top(); // last number in stack is the answer 
