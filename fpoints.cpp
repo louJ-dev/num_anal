@@ -17,9 +17,9 @@ std::string decimal_to_binary(double n) {
     std::string result = "";
     while(whole > 0) {
         if(whole % 2 > 0) {
-            result = '1' + result;
+            result.insert(0, '1');
         } else {
-            result = '0' + result;
+            result.insert(0, '0');
         }
 
         whole /= 2;
