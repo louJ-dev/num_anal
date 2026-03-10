@@ -178,16 +178,17 @@ bool is_digit(char c) {
 }
 
 bool is_operator(char c) {
-    if(c == '+' ||
-        c == '-' ||
-        c == '/' ||
-        c == '*' ||
-        c == '^' ||
-        c == '%') {
-        return true;    
+    switch(c) {
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+        case '^':
+        case '%':
+            return true;
+        default:
+            return false;
     }
-
-    return false;
 }
 
 int get_precedence(char operation) {
