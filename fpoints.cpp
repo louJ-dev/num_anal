@@ -276,6 +276,28 @@ bool try_evaluate(double a, double b, char operation, double* result) {
     return false;
 }
 
+double evaluate(double a, double b, char oper) {
+    double result;
+
+    if('+' == oper) {     
+        result = a + b;
+    } else if('-' == oper) {
+        result = a - b;
+    } else if('*' == oper) {
+        result = a * b;
+    } else if('/' == oper) {
+        if(b == 0) {
+            throw std::runtime_error("Division by Zero");
+        }
+
+        result = a / b;
+    } else {
+        throw std::runtime_error("Invalid operation");
+    }
+
+    return result;
+}
+
 double chop_evaluate(double a, double b, char oper, int sig) {
     a = get_chop(a, sig);
     b = get_chop(b, sig);
