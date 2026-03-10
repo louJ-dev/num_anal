@@ -247,35 +247,6 @@ double get_num_from_index(int i, std::string s, int *length) {
     return num * sign;
 }
 
-
-/* TODO: remake this
- *      make it more simpler
- *      use better error handling
- *      avoid the use of pointers for result
- */
-
-bool try_evaluate(double a, double b, char operation, double* result) {
-    if('+' == operation) {
-        *result = a + b;
-        return true;
-    } else if('-' == operation) {
-        *result = a - b;
-        return true;
-    } else if('*' == operation) {
-        *result = a * b;
-        return true;
-    } else if('/' == operation) {
-        if(b == 0) {
-            throw std::runtime_error("err: division by zero");
-        }
-
-        *result = a / b;
-        return true;
-    }
-
-    return false;
-}
-
 double evaluate(double a, double b, char oper) {
     double result;
 
@@ -359,10 +330,7 @@ double solve_expression(std::string expr) {
                     char operation = oper.top();
                     oper.pop();
 
-                    double result;
-                    if(try_evaluate(operandA, operandB, operation, &result)) {
-                        nums.push(result);
-                    }
+                    nums.push(evaluate(operandA, operandB, operation));
                 }
                 
                 oper.push(expr[i]);
@@ -384,12 +352,7 @@ double solve_expression(std::string expr) {
                 char operation = oper.top();
                 oper.pop();
 
-                double result;
-                if(try_evaluate(operandA, operandB, operation, &result)) {
-                    nums.push(result);
-                } else {
-                    nums.push(0);
-                }
+                nums.push(evaluate(operandA, operandB, operation));
             }
            
             if(!oper.empty() && oper.top() == '(') {
@@ -408,12 +371,7 @@ double solve_expression(std::string expr) {
         char operation = oper.top();
         oper.pop();
 
-        double result;
-        if(try_evaluate(operandA, operandB, operation, &result)) {
-            nums.push(result);
-        } else {
-            nums.push(0);
-        }
+        nums.push(evaluate(operandA, operandB, operation));
     }
 
     return nums.top(); // last number in stack is the answer 
