@@ -438,7 +438,9 @@ int get_sig_digits(double rel_error) {
     return sdig;
 }
 
-
+double get_max_abs_error(double exact, int sig_digits) {
+    return 5.0 * std::pow(10.0, -sig_digits) * std::fabs(exact);
+}
 
 int main() {
     std::string expressions[20] = {
@@ -534,6 +536,7 @@ int main() {
     std::cout << "ABSE: " << get_absolute_error(answer, approx) << '\n'; 
     std::cout << "RELE: " << get_relative_error(answer, approx) << '\n'; 
     std::cout << "SIGD: " << get_sig_digits(get_relative_error(answer, approx)) << '\n';
+    std::cout << "MABS: " << get_max_abs_error(answer, get_sig_digits(get_relative_error(answer, approx))) << '\n';
 
     return 0; 
 }
