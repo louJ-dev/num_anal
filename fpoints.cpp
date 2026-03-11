@@ -169,11 +169,22 @@ double chop_sqrts(double n, int chop) {
     return get_chop(std::sqrt(n), chop);
 }
 
+/* BUG: rounding is not implemented properly
+ *      floating-point numbers cannot be truely be rounded
+ */
+
 double get_round(double n, int place) {
-    double r = n + (0.5 * COMPUTE_PRECISION);
-    if(std::abs(n - r) < COMPUTE_PRECISION) {
+    long long int convert = n * 1e13;
+    if(convert % 10 >= 5) {
+        convert += 10;
+    }
+
+    double r = convert * COMPUTE_PRECISION * 1e-1;
+
+    if(std::abs(n - r) <= DISPLAY_PRECISION) {
         return r; 
     }
+
     return n;
 }
 
@@ -436,7 +447,6 @@ int main() {
 
     std::cout << std::fixed << std::setprecision(20);
 
-
     for(int i = 0; i < 20; i++) {
         std::string exp = expressions[i];
         double answer = get_round(solve_expression(exp), 1);
@@ -451,10 +461,12 @@ int main() {
             message << " should be " << answers[i];
         }
 
-        std::stringstream ss;
-        ss << std::fixed << std::setprecision(DISPLAY_PRECISION);
-        ss << verdict << exp << " -> " << answer << message.str() << '\n';
-        std::cout << ss.str();
+        std::cout << verdict << exp << " -> " << answer << message.str() << '\n';
+
+        // std::stringstream ss;
+        // ss << std::fixed << std::setprecision(DISPLAY_PRECISION);
+        // ss << verdict << exp << " -> " << answer << message.str() << '\n';
+        // std::cout << ss.str();
     }
 
     return 0; 
