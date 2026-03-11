@@ -137,6 +137,18 @@ double get_chop(double n, int sdigit) {
     return chopped;
 }
 
+double get_chop_unnormalized(double n, int sdigit) {
+    if(0.0 == n || !std::isfinite(n)) {
+        return n;
+    }
+
+    long long int scaled = n * std::pow(10, sdigit);
+    double chop = std::trunc(scaled);
+    double chopped = chop / std::pow(10, sdigit);
+
+    return chopped;
+}
+
 double chop_add_float(double a, double b, int chop) {
     double ca = get_chop(a, chop);
     double cb = get_chop(b, chop); 
@@ -174,18 +186,23 @@ double chop_sqrts(double n, int chop) {
  */
 
 double get_round(double n, int place) {
-    long long int convert = n * 1e13;
+    long long int convert = n * std::pow(10, place);
     if(convert % 10 >= 5) {
         convert += 10;
     }
 
-    double r = convert * COMPUTE_PRECISION * 1e-1;
-
+    double r = convert / std::pow(10.0, place);
+    r = get_chop_unnormalized(r, place - 1);
+    /*
+    
     if(std::abs(n - r) <= DISPLAY_PRECISION) {
         return r; 
     }
+    
+    */
+    
 
-    return n;
+    return r;
 }
 
 bool is_digit(char c) {
@@ -398,6 +415,8 @@ double get_relative_error(double exact, double approximate) {
     return std::abs(exact - approximate) / exact;
 }
 
+
+
 int main() {
     std::string expressions[20] = {
         "45.67 * 2.3 + 18.92 / 4.4",
@@ -444,9 +463,9 @@ int main() {
         33.95,  
         100.5   
     };
-
+    
     std::cout << std::fixed << std::setprecision(20);
-
+    /*
     for(int i = 0; i < 20; i++) {
         std::string exp = expressions[i];
         double answer = get_round(solve_expression(exp), 1);
@@ -468,6 +487,26 @@ int main() {
         // ss << verdict << exp << " -> " << answer << message.str() << '\n';
         // std::cout << ss.str();
     }
+    */
+    
+    std::string problem = "(2.1892)*(3.7008)";
+    double answer = solve_expression(problem);
+    double chopped = get_chop(answer, 8);
+    double rounded = get_round(answer, 8);
+    double approx = 8.1017;
 
+    std::cout << std::fixed << std::setprecision(8);
+
+    std::cout << "ANSW: " << answer << '\n';
+    std::cout << "CHOP: " << chopped << '\n'; 
+    std::cout << "ABSE: " << get_absolute_error(answer, chopped) << '\n'; 
+    std::cout << "RELE: " << get_relative_error(answer, chopped) << '\n'; 
+    std::cout << "ROND: " << rounded << '\n'; 
+    std::cout << "ABSE: " << get_absolute_error(answer, rounded) << '\n'; 
+    std::cout << "RELE: " << get_relative_error(answer, rounded) << '\n'; 
+    std::cout << "APRX: " << approx << '\n'; 
+    std::cout << "ABSE: " << get_absolute_error(answer, approx) << '\n'; 
+    std::cout << "RELE: " << get_relative_error(answer, approx) << '\n'; 
+    
     return 0; 
 }
