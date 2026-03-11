@@ -1,9 +1,9 @@
 #include<bits/stdc++.h>
 
-#define BIAS 1023            // value set for 64-bit 
-#define EPSILON 1e-8        // threshold 
-#define COMPUTE_PRECISION 1e-12 // used for calculations
-#define DISPLAY_PRECISION 8  // used for outputs
+#define BIAS 1023                   // value set for 64-bit 
+#define EPSILON 1e-8                // threshold 
+#define COMPUTE_PRECISION 1e-12     // used for calculations
+#define DISPLAY_PRECISION 8         // used for outputs
 
 std::string decimal_to_binary(double n) {
     if(0 == n) {
@@ -412,7 +412,28 @@ double get_absolute_error(double exact, double approximate) {
 }
 
 double get_relative_error(double exact, double approximate) {
-    return std::abs(exact - approximate) / exact;
+    return std::abs(exact - approximate) / std::abs(exact);
+}
+
+int get_sig_digits(double rel_error) {
+    if(0 == rel_error) {
+        return -1;
+    }
+    
+    int sdig = std::ceil(std::log10(std::fabs(rel_error)));
+    while(true) {
+        if((5.0 / std::pow(10.0, sdig)) >= rel_error && (5.0 / std::pow(10.0, sdig + 1)) < rel_error) {
+            break;
+        }
+
+        if((5.0 / std::pow(10.0, sdig)) >= rel_error) {
+            sdig++;
+        } else if((5.0 / std::pow(10.0, sdig)) < rel_error) {
+            sdig--;
+        }
+    }
+
+    return sdig;
 }
 
 
@@ -498,15 +519,19 @@ int main() {
     std::cout << std::fixed << std::setprecision(8);
 
     std::cout << "ANSW: " << answer << '\n';
+    std::cout << "------------------------------------------------" << '\n';
     std::cout << "CHOP: " << chopped << '\n'; 
     std::cout << "ABSE: " << get_absolute_error(answer, chopped) << '\n'; 
     std::cout << "RELE: " << get_relative_error(answer, chopped) << '\n'; 
+    std::cout << "------------------------------------------------" << '\n';
     std::cout << "ROND: " << rounded << '\n'; 
     std::cout << "ABSE: " << get_absolute_error(answer, rounded) << '\n'; 
     std::cout << "RELE: " << get_relative_error(answer, rounded) << '\n'; 
+    std::cout << "------------------------------------------------" << '\n';
     std::cout << "APRX: " << approx << '\n'; 
     std::cout << "ABSE: " << get_absolute_error(answer, approx) << '\n'; 
     std::cout << "RELE: " << get_relative_error(answer, approx) << '\n'; 
-    
+    std::cout << "SIGD: " << get_sig_digits(get_relative_error(answer, approx)) << '\n';
+
     return 0; 
 }
