@@ -1,8 +1,8 @@
 #include<bits/stdc++.h>
 
 #define BIAS 1023            // value set for 64-bit 
-#define EPSILON 1e-12        // threshold 
-#define COMPUTE_PRECISION 12 // used for calculations
+#define EPSILON 1e-8        // threshold 
+#define COMPUTE_PRECISION 1e-12 // used for calculations
 #define DISPLAY_PRECISION 8  // used for outputs
 
 std::string decimal_to_binary(double n) {
@@ -167,6 +167,14 @@ double chop_pow(double b, int pow, int chop) {
 
 double chop_sqrts(double n, int chop) {
     return get_chop(std::sqrt(n), chop);
+}
+
+double get_round(double n, int place) {
+    double r = n + (0.5 * COMPUTE_PRECISION);
+    if(std::abs(n - r) < COMPUTE_PRECISION) {
+        return r; 
+    }
+    return n;
 }
 
 bool is_digit(char c) {
@@ -371,6 +379,14 @@ double solve_expression(std::string expr) {
     return nums.top(); // last number in stack is the answer 
 }
 
+double get_absolute_error(double exact, double approximate) {
+    return std::abs(exact - approximate);
+}
+
+double get_relative_error(double exact, double approximate) {
+    return std::abs(exact - approximate) / exact;
+}
+
 int main() {
     std::string expressions[20] = {
         "45.67 * 2.3 + 18.92 / 4.4",
@@ -423,19 +439,22 @@ int main() {
 
     for(int i = 0; i < 20; i++) {
         std::string exp = expressions[i];
-        double answer = solve_expression(exp);
+        double answer = get_round(solve_expression(exp), 1);
         
         std::string verdict;
         std::stringstream message;
     
-        if(std::abs(answer - answers[i]) < 1e-1) {
+        if(std::abs(answer - answers[i]) < EPSILON) {
             verdict = "pass... ";
         } else {
             verdict = "fail... ";
             message << " should be " << answers[i];
         }
 
-        std::cout << verdict << exp << " -> " << answer << message.str() << '\n';
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(DISPLAY_PRECISION);
+        ss << verdict << exp << " -> " << answer << message.str() << '\n';
+        std::cout << ss.str();
     }
 
     return 0; 
