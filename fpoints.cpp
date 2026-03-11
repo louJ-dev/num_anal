@@ -422,13 +422,15 @@ int get_sig_digits(double rel_error) {
     
     int sdig = std::ceil(std::log10(std::fabs(rel_error)));
     while(true) {
-        if((5.0 / std::pow(10.0, sdig)) >= rel_error && (5.0 / std::pow(10.0, sdig + 1)) < rel_error) {
+        double curr = 5.0 / std::pow(10.0, sdig);
+
+        if(curr >= rel_error && (5.0 / std::pow(10.0, sdig + 1)) < rel_error) {
             break;
         }
 
-        if((5.0 / std::pow(10.0, sdig)) >= rel_error) {
+        if(curr >= rel_error) {
             sdig++;
-        } else if((5.0 / std::pow(10.0, sdig)) < rel_error) {
+        } else {
             sdig--;
         }
     }
