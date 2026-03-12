@@ -239,6 +239,28 @@ int get_precedence(char operation) {
     }
 }
 
+/*  
+ *
+ *  return: -1 for left-associative
+ *          +1 for right-associative
+ *          0  for unknown;
+ *
+ */
+
+int get_associative(char operation) {
+    switch(operation){
+        case '+': 
+        case '-': 
+        case '*': 
+        case '/':
+            return -1;
+        case '^':
+            return 1;
+        default:
+            return 0;
+    }
+}
+
 // returns: first whole num from index (i) 
 //          stops until non-numeric char
 // returns: zero when no number is found
@@ -294,6 +316,8 @@ double evaluate(double a, double b, char oper) {
         }
 
         result = a / b;
+    } else if('^' == oper){
+        result = std::pow(a, b);
     } else {
         throw std::runtime_error("Invalid operation");
     }
@@ -305,7 +329,7 @@ double chop_evaluate(double a, double b, char oper, int sig) {
     a = get_chop(a, sig);
     b = get_chop(b, sig);
 
-    double result = evaluate(a, b);
+    double result = evaluate(a, b, oper);
     
     return get_chop(result, sig);
 }
@@ -314,13 +338,13 @@ double round_evaluate(double a, double b, char oper, int place) {
     a = get_round(a, place);
     b = get_round(b, place);
 
-    double result = evaluate(a, b);
+    double result = evaluate(a, b, oper);
     
-    return get_round(result, sig);
+    return get_round(result, place);
 }
 
-void remove_whitespace(std::string* str) {
-    str->erase(std::remove_if(str->begin(), str->end(), ::isspace), str->end()); 
+void remove_whitespace(std::string& str) {
+    str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end()); 
 }
 
 void replace_all(std::string& str, const std::string& from, const std::string& to) { 
@@ -328,16 +352,17 @@ void replace_all(std::string& str, const std::string& from, const std::string& t
         return;
     }
 
-    size_t pos = std.find(from, 0);
+    size_t pos = str.find(from, 0);
     while(pos != std::string::npos) {
         str.replace(pos, from.length(), to);
         pos += to.length();
+        pos = str.find(from, 0);
     }
 }
 
 void replace_constants(std::string& exp) {
-    constexpr std::string PI_REP = "3.14159265359";
-    constexpr std::string E_REP  = "2.7182818284";
+    const std::string PI_REP = "3.14159265359";
+    const std::string E_REP  = "2.7182818284";
     
     replace_all(exp, "PI", PI_REP); 
     replace_all(exp, "pi", PI_REP); 
@@ -346,27 +371,28 @@ void replace_constants(std::string& exp) {
     replace_all(exp, "e", PI_REP); 
 }
 
-void solve_expression_helper(std::stack<double>* nums, std::stack<char>* opers) {
-    if(nums->size() < 2) {
+void solve_expression_helper(std::stack<double>& nums, std::stack<char>& opers) {
+    if(nums.size() < 2) {
         throw std::runtime_error("Missing operand");
     }
 
-    if(opers->empty() || opers->top() == '(') {
+    if(opers.empty() || opers.top() == '(') {
         throw std::runtime_error("Invalid expression");
     }
 
-    double b = nums->top();
-    nums->pop();
-    double a = nums->top();
-    nums->pop();
-    char o = opers->top();
-    opers->pop();
+    double b = nums.top();
+    nums.pop();
+    double a = nums.top();
+    nums.pop();
+    char o = opers.top();
+    opers.pop();
 
-    nums->push(evaluate(a, b, o));
+    nums.push(evaluate(a, b, o));
 }
 
 double solve_expression(std::string expr) {
-    remove_whitespace(&expr);
+    remove_whitespace(expr);
+    replace_constants(expr);
 
     std::stack<double> nums;
     std::stack<char> opers;
@@ -389,8 +415,13 @@ double solve_expression(std::string expr) {
                 nums.push(get_num_from_index(i, expr, &num_len));
                 i += num_len - 1;
             } else {
-                while(!opers.empty() && get_precedence(opers.top()) >= get_precedence(expr[i])) {
-                    solve_expression_helper(&nums, &opers); 
+                int preced_curr = get_precedence(expr[i]);
+                int preced_top = -1;
+                while(!opers.empty() 
+                        && opers.top() != '(' 
+                        && (preced_top = get_precedence(opers.top()) > preced_curr
+                            || (preced_curr == preced_top && get_associative(expr[i]) == -1))) {
+                    solve_expression_helper(nums, opers); 
                 }
                 
                 opers.push(expr[i]);
@@ -405,7 +436,7 @@ double solve_expression(std::string expr) {
         // right parenthesis
         else if(expr[i] == ')') {
             while(!opers.empty() && opers.top() != '(') {
-                solve_expression_helper(&nums, &opers); 
+                solve_expression_helper(nums, opers); 
             }
            
             if(!opers.empty() && opers.top() == '(') {
@@ -417,7 +448,7 @@ double solve_expression(std::string expr) {
     }
 
     while(!opers.empty()) {
-        solve_expression_helper(&nums, &opers); 
+        solve_expression_helper(nums, opers); 
     }
 
     return nums.top(); // last number in stack is the answer 
@@ -427,7 +458,7 @@ double get_absolute_error(double exact, double approximate) {
     return std::abs(exact - approximate);
 }
 
-double get_relative_error(double exact, dou8.10179136ble approximate) {
+double get_relative_error(double exact, double approximate) {
     return std::abs(exact - approximate) / std::abs(exact);
 }
 
@@ -528,7 +559,6 @@ int main() {
         // ss << verdict << exp << " -> " << answer << message.str() << '\n';
         // std::cout << ss.str();
     }
-    */
     
     std::string problem = "(2.1892)*(3.7008)";
     double answer = solve_expression(problem);
@@ -553,6 +583,10 @@ int main() {
     std::cout << "RELE: " << get_relative_error(answer, approx) << '\n'; 
     std::cout << "SIGD: " << get_sig_digits(get_relative_error(answer, approx)) << '\n';
     std::cout << "MABS: " << get_max_abs_error(answer, get_sig_digits(get_relative_error(answer, approx))) << '\n';
+    
+    */
+
+    std::cout << solve_expression("3+4^(1/2)") << '\n';    
 
     return 0; 
 }
