@@ -76,47 +76,5 @@
         <div id="result"></div>
     </div>
 
-    <script>
-        function calculate() {
-            const inputField = document.getElementById('expressionInput');
-            const resultDiv = document.getElementById('result');
-            const expression = inputField.value;
-
-            // Check if the input is empty
-            if (!expression.trim()) {
-                resultDiv.textContent = 'Please enter an expression.';
-                resultDiv.className = 'error';
-                return;
-            }
-
-            try {
-                // Use math.evaluate() to safely parse and solve the math
-                const result = math.evaluate(expression);
-                
-                // Check if the result is valid (prevents weird outputs)
-                if (result === undefined || typeof result === 'function') {
-                    throw new Error("Invalid");
-                }
-
-                // Format long decimals to keep the UI clean
-                const formattedResult = math.format(result, { precision: 14 });
-                
-                resultDiv.textContent = `Result: ${formattedResult}`;
-                resultDiv.className = ''; // Remove error styling
-            } catch (error) {
-                // Catch typos like "2 + * 3"
-                resultDiv.textContent = 'Invalid math expression.';
-                resultDiv.className = 'error';
-            }
-        }
-
-        // Quality of life: Allow the user to press 'Enter' to calculate
-        document.getElementById('expressionInput').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                calculate();
-            }
-        });
-    </script>
-
 </body>
 </html>
