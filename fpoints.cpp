@@ -305,29 +305,45 @@ double chop_evaluate(double a, double b, char oper, int sig) {
     a = get_chop(a, sig);
     b = get_chop(b, sig);
 
-    double result;
-
-    if('+' == oper) {     
-        result = a + b;
-    } else if('-' == oper) {
-        result = a - b;
-    } else if('*' == oper) {
-        result = a * b;
-    } else if('/' == oper) {
-        if(b == 0) {
-            throw std::runtime_error("Division by Zero");
-        }
-
-        result = a / b;
-    } else {
-        throw std::runtime_error("Invalid operation");
-    }
+    double result = evaluate(a, b);
     
     return get_chop(result, sig);
 }
 
+double round_evaluate(double a, double b, char oper, int place) {
+    a = get_round(a, place);
+    b = get_round(b, place);
+
+    double result = evaluate(a, b);
+    
+    return get_round(result, sig);
+}
+
 void remove_whitespace(std::string* str) {
     str->erase(std::remove_if(str->begin(), str->end(), ::isspace), str->end()); 
+}
+
+void replace_all(std::string& str, const std::string& from, const std::string& to) { 
+    if(from.empty()) {
+        return;
+    }
+
+    size_t pos = std.find(from, 0);
+    while(pos != std::string::npos) {
+        str.replace(pos, from.length(), to);
+        pos += to.length();
+    }
+}
+
+void replace_constants(std::string& exp) {
+    constexpr std::string PI_REP = "3.14159265359";
+    constexpr std::string E_REP  = "2.7182818284";
+    
+    replace_all(exp, "PI", PI_REP); 
+    replace_all(exp, "pi", PI_REP); 
+
+    replace_all(exp, "E", PI_REP); 
+    replace_all(exp, "e", PI_REP); 
 }
 
 void solve_expression_helper(std::stack<double>* nums, std::stack<char>* opers) {
@@ -411,7 +427,7 @@ double get_absolute_error(double exact, double approximate) {
     return std::abs(exact - approximate);
 }
 
-double get_relative_error(double exact, double approximate) {
+double get_relative_error(double exact, dou8.10179136ble approximate) {
     return std::abs(exact - approximate) / std::abs(exact);
 }
 
