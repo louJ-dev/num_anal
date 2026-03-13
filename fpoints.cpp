@@ -1,4 +1,17 @@
-#include<bits/stdc++.h>
+#include <iostream>
+#include <string>
+#include <stack>
+#include <cmath>
+#include <algorithm>
+
+#if __has_include(<emscripten.h>)
+
+    #include <emscripten.h>
+    #include <emscripten/bind.h>
+
+    #define HAS_EMSCRIPTEN 1
+#endif
+
 
 #define BIAS 1023                   // value set for 64-bit 
 #define EPSILON 1e-8                // threshold 
@@ -390,6 +403,44 @@ void solve_expression_helper(std::stack<double>& nums, std::stack<char>& opers) 
     nums.push(evaluate(a, b, o));
 }
 
+double get_absolute_error(double exact, double approximate) {
+    return std::abs(exact - approximate);
+}
+
+double get_relative_error(double exact, double approximate) {
+    return std::abs(exact - approximate) / std::abs(exact);
+}
+
+int get_sig_digits(double rel_error) {
+    if(0 == rel_error) {
+        return -1;
+    }
+    
+    int sdig = std::floor(1 - std::log10(2*rel_error));
+
+    /*
+    while(true) {
+        double curr = 5.0 / std::pow(10.0, sdig);
+
+        if(curr >= rel_error && (5.0 / std::pow(10.0, sdig + 1)) < rel_error) {
+            break;
+        }
+
+        if(curr >= rel_error) {
+            sdig++;
+        } else {
+            sdig--;
+        }
+    }
+    */
+    
+    return sdig;
+}
+
+double get_max_abs_error(double exact, int sig_digits) {
+    return 5.0 * std::pow(10.0, -sig_digits) * std::fabs(exact);
+}
+
 double solve_expression(std::string expr) {
     remove_whitespace(expr);
     replace_constants(expr);
@@ -454,41 +505,45 @@ double solve_expression(std::string expr) {
     return nums.top(); // last number in stack is the answer 
 }
 
-double get_absolute_error(double exact, double approximate) {
-    return std::abs(exact - approximate);
-}
 
-double get_relative_error(double exact, double approximate) {
-    return std::abs(exact - approximate) / std::abs(exact);
-}
 
-int get_sig_digits(double rel_error) {
-    if(0 == rel_error) {
-        return -1;
+
+/*
+ *
+ *  allows c++ to work in js as a connection
+ *
+ *  add functions so that js can access it
+ *
+ *  change string parameter to change function name in js
+ *
+ *
+*/
+
+#if HAS_EMSCRIPTEN
+
+    EMSCRIPTEN_BINDINGS(my_module) {
+        emscripten::function("decimal_to_binary", &decimal_to_binary);
+        emscripten::function("binary_to_decimal", &binary_to_decimal);
+        emscripten::function("ieee_to_decimal", &ieee_to_decimal);
+        emscripten::function("decimal_to_ieee", &decimal_to_ieee);
+        emscripten::function("solve_expression", &solve_expression);
+        emscripten::function("get_chop", &get_chop);
+        emscripten::function("get_round", &get_round);
+        emscripten::function("get_absolute_error", &get_absolute_error);
+        emscripten::function("get_relative_error", &get_relative_error);
+        emscripten::function("get_sig_digits", &get_sig_digits);
+        emscripten::function("get_max_abs_error", &get_max_abs_error);
     }
-    
-    int sdig = std::ceil(std::log10(std::fabs(rel_error)));
-    while(true) {
-        double curr = 5.0 / std::pow(10.0, sdig);
 
-        if(curr >= rel_error && (5.0 / std::pow(10.0, sdig + 1)) < rel_error) {
-            break;
-        }
+#endif
 
-        if(curr >= rel_error) {
-            sdig++;
-        } else {
-            sdig--;
-        }
-    }
-
-    return sdig;
-}
-
-double get_max_abs_error(double exact, int sig_digits) {
-    return 5.0 * std::pow(10.0, -sig_digits) * std::fabs(exact);
-}
 
 int main() {
+    double result = solve_expression("PI^PI");
+    double approx = 36.462;
+    double re = get_relative_error(result, approx);
+    int sigdig = get_sig_digits(re);
+
+    std::cout << sigdig << std::endl;
     return 0; 
 }

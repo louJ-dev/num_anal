@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Math Expression Evaluator</title>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+    <script src="fpoints.js"></script>
     
     <style>
         body {
@@ -75,6 +75,46 @@
         <button onclick="calculate()">Calculate</button>
         <div id="result"></div>
     </div>
+
+    <script>
+        function calculate() {
+            var expr = document.getElementById('expressionInput').value;
+                
+            if(expr === '') {
+                return;
+            }
+
+            var exact = Module.solve_expression(expr);
+            var approx = Module.get_chop(exact, 5);
+
+            var abs_error = Module.get_absolute_error(exact, approx);
+            var rel_error = Module.get_relative_error(exact, approx);
+            var sig_digits = Module.get_sig_digits(rel_error);
+            var mabs_error = Module.get_max_abs_error(exact, sig_digits);
+
+            console.log(expr + ' => ' + exact);
+            console.log('approx     => ' + approx);
+            console.log('abs_error  => ' + abs_error);
+            console.log('rel_error  => ' + rel_error);
+            console.log('sig_digits => ' + sig_digits);
+            console.log('mabs_error =>' + mabs_error);
+        }
+
+
+
+        Module.onRuntimeInitialized = () => {
+            console.log('WASM module initialized...');
+            
+            const input = document.getElementById("expressionInput");
+
+            input.addEventListener("keypress", function(event) {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                calculate();
+              }
+            });
+        };
+    </script>
 
 </body>
 </html>
