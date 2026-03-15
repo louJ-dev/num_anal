@@ -545,6 +545,18 @@ double solve_expression_chop(std::string expr, int chop) {
     std::stack<char> opers;
 
     int i = 0;
+
+    if(is_operator(expr[0])) {
+        if('+' == expr[0] || '-' == expr[0]){
+            if(1 < expr.length() && !is_digit(expr[1])) {
+                nums.push(0);
+                i++;
+            }
+        } else {
+            throw std::runtime_error("Missing operand");
+        }
+    }
+
     while(i < expr.length()) {
         // digit 
         if(is_digit(expr[i])) {
@@ -577,12 +589,35 @@ double solve_expression_chop(std::string expr, int chop) {
 
         // left parenthesis
         else if(expr[i] == '(') {
-            opers.push('(');
             
-            if(i > 0 && (is_digit(expr[i-1]) || ')')) {
-                opers.push('*');
-            }
+            if(i > 0) {
+                if (is_digit(expr[i-1]) || ')' == expr[i-1]) {
+                    opers.push('(');
+                    opers.push('*');
+                }else if(!opers.empty() && opers.top() == '-') {
+                    opers.pop(); 
 
+                    opers.push('+');
+                    opers.push('*');
+                    if(nums.size() < 1) {
+                        nums.push(0);
+                    }
+                    nums.push(-1);
+                    
+                    opers.push('(');
+                }else if('-' == expr[i-1]) {
+                    opers.pop(); // removes added -
+                    opers.push('+');
+                    opers.push('*');
+                    if(nums.size() < 1) {
+                        nums.push(0);
+                    }
+                    nums.push(-1);
+                    opers.push('(');
+                } 
+            } else {
+                opers.push('(');
+            }
         } 
 
         // right parenthesis
@@ -633,6 +668,18 @@ double solve_expression_round(std::string expr, int digit) {
     std::stack<char> opers;
 
     int i = 0;
+
+    if(is_operator(expr[0])) {
+        if('+' == expr[0] || '-' == expr[0]){
+            if(1 < expr.length() && !is_digit(expr[1])) {
+                nums.push(0);
+                i++;
+            }
+        } else {
+            throw std::runtime_error("Missing operand");
+        }
+    }
+
     while(i < expr.length()) {
         // digit 
         if(is_digit(expr[i])) {
@@ -644,7 +691,7 @@ double solve_expression_round(std::string expr, int digit) {
         // operator (+, -, *, /, ^)
         else if(is_operator(expr[i])) {
             
-            // check if '-' is a start of a negative number or is an operator 
+            // check if '-' is aview code in gdb start of a negative number or is an operator 
             if(expr[i] == '-' && (i == 0 || is_operator(expr[i-1]) || expr[i-1] == '(') && is_digit(expr[i+1])) {
                 int num_len;
                 nums.push(get_num_from_index(i, expr, &num_len));
@@ -665,13 +712,35 @@ double solve_expression_round(std::string expr, int digit) {
 
         // left parenthesis
         else if(expr[i] == '(') {
-            opers.push('(');
             
-            if(i > 0 && (is_digit(expr[i-1]) || ')')) {
-                opers.push('*');
+            if(i > 0) {
+                if (is_digit(expr[i-1]) || ')' == expr[i-1]) {
+                    opers.push('(');
+                    opers.push('*');
+                }else if(!opers.empty() && opers.top() == '-') {
+                    opers.pop(); 
+
+                    opers.push('+');
+                    opers.push('*');
+                    if(nums.size() < 1) {
+                        nums.push(0);
+                    }
+                    nums.push(-1);
+                    
+                    opers.push('(');
+                }else if('-' == expr[i-1]) {
+                    opers.pop(); // removes added -
+                    opers.push('+');
+                    opers.push('*');
+                    if(nums.size() < 1) {
+                        nums.push(0);
+                    }
+                    nums.push(-1);
+                    opers.push('(');
+                } 
+            } else {
+                opers.push('(');
             }
-
-
         } 
 
         // right parenthesis
