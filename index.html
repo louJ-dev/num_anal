@@ -60,6 +60,23 @@
             text-align: left;
             white-space: pre-line;
         }
+        .holder {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #e9ecef;
+            border-radius: 6px;
+            font-family: monospace;
+        }
+        .variable-entry {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 0.2rem;
+        }
+        .variable-entry label {
+            display: block;
+            font-size: 1rem;
+        }
         .hidden { display: none; }
     </style>
 </head>
@@ -71,6 +88,11 @@
     <div class="input-group" id="main-input">
         <label for="expressionInput">Math Expression</label>
         <input type="text" id="expressionInput" placeholder="e.g., 10 / 3 or PI * 2">
+    </div>
+
+    <div class="input-group" id="variables-input">
+        <label for="variables-holder">Variables</label>
+        <div id="variables-holder" class="holder"></div>
     </div>
 
     <div class="input-group">
@@ -97,11 +119,57 @@
             return Math.trunc(x * 100000000) / 100000000;
         }
 
+        function getVariables(expr) {
+            const numRegEx = /^\d+$/;
+            const letRegEx = /^[a-zA-Z]$/;
+            const vars = [];
 
-        function onChangeExpression(holder) {
-            const expression = holder.value;
+            for(var i = 0; i < expr.length; i++) {
+                var curr = expr[i];
+                if(letRegEx.test(curr)) {
+                    if(curr == 'P' && i + 1 < expr.length && expr[i+1] == 'I') { i += 2; }
+                    else if(curr == 'p' && i + 1 < expr.length && expr[i+1] == 'i') { i += 2; }
+                    else if(curr == 'e' || curr == 'E') { i += 1; }
+                    else { vars.push(curr); }
+                }
+            }
+
+            return new Set(vars);
         }
 
+        const expVar = new Map();
+
+        function setVariable(key) {
+            const holder = document.getElementById('var-' + key);
+            expVar.set(key, holder.value);
+
+        }
+
+        function onChangeExpression(newExpr) {
+            const vars = getVariables(newExpr);
+
+            for(const v of vars) {
+                if(!expVar.has(v)) {
+                    expVar.set(v, 0);
+                }
+            }
+
+            for(const [k, v] of expVar) {
+                if(!vars.has(k)) {
+                    expVar.delete(k);
+                }
+            }
+
+            const varsContainer = document.getElementById('variables-holder');
+            varsContainer.innerHTML = '';
+            for(const [k, v] of expVar) {
+                const entry = document.createElement('div');
+                entry.className = 'variable-entry';
+                entry.innerHTML = `<label for="var-${k}">${k}=</label><input id=var-${k} type="text" value="${v}" onchange="setVariable('${k}')"></input>`;
+
+                varsContainer.appendChild(entry);
+            }
+        }
 
         function onChangeTermMethod(dropdownElement) {
             const method = dropdownElement.value;
@@ -122,6 +190,12 @@
             if(expr === '') {
                 return;
             }
+
+            for(const [k, v] of expVar) {
+                expr = expr.replaceAll(k, '(' + v + ')');
+            }
+
+            console.log(expr);
 
             var exact = Module.solve_expression(expr);
             
@@ -155,9 +229,14 @@
             input.addEventListener("keypress", function(event) {
               if (event.key === "Enter") {
                 event.preventDefault();
+                onChangeExpression(input.value);
                 calculate();
               }
             });
+
+            input.addEventListener('input', e => {
+                onChangeExpression(e.target.value);
+            });       
         };
     </script>
 
