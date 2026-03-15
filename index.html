@@ -98,6 +98,11 @@
         }
 
 
+        function onChangeExpression(holder) {
+            const expression = holder.value;
+        }
+
+
         function onChangeTermMethod(dropdownElement) {
             const method = dropdownElement.value;
             
@@ -107,6 +112,7 @@
                 document.getElementById('terminationInput').style.display = "block";
             }
         }
+
 
         function calculate() {
             var expr = document.getElementById('expressionInput').value;
