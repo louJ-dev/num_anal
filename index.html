@@ -147,7 +147,16 @@
 
         function onChangeExpression(newExpr) {
             const vars = getVariables(newExpr);
+            const varsGroup = document.getElementById('variables-input');
+            const varsContainer = document.getElementById('variables-holder');
 
+            if(vars.size === 0) {
+                varsGroup.style.display = 'none';
+                return;
+            }
+
+            varsGroup.style.display = 'block';
+            
             for(const v of vars) {
                 if(!expVar.has(v)) {
                     expVar.set(v, 0);
@@ -160,7 +169,6 @@
                 }
             }
 
-            const varsContainer = document.getElementById('variables-holder');
             varsContainer.innerHTML = '';
             for(const [k, v] of expVar) {
                 const entry = document.createElement('div');
@@ -237,6 +245,8 @@
             input.addEventListener('input', e => {
                 onChangeExpression(e.target.value);
             });       
+            
+            document.getElementById('variables-input').style.display = 'none';
         };
     </script>
 
