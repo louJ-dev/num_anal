@@ -391,8 +391,8 @@ void replace_constants(std::string& exp) {
     replace_all(exp, "PI", PI_REP); 
     replace_all(exp, "pi", PI_REP); 
 
-    replace_all(exp, "E", PI_REP); 
-    replace_all(exp, "e", PI_REP); 
+    replace_all(exp, "E", E_REP); 
+    replace_all(exp, "e", E_REP); 
 }
 
 void solve_expression_helper(std::stack<double>& nums, std::stack<char>& opers) {
