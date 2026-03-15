@@ -9,104 +9,143 @@
     
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            background-color: #f3f4f6;
+            min-height: 100vh;
             margin: 0;
+            background-color: #f4f7f6;
         }
-        .calculator-container {
+        .container {
             background: white;
-            padding: 30px;
+            padding: 2rem;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center;
-            width: 320px;
-        }
-        input[type="text"] {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 16px;
-            box-sizing: border-box;
-            outline: none;
+            max-width: 80vw;
         }
-        input[type="text"]:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        h2 { margin-top: 0; color: #333; font-size: 1.5rem; }
+        .input-group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #555; }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
         }
         button {
+            width: 100%;
             padding: 12px;
-            background-color: #3b82f6;
+            background-color: #007aff;
             color: white;
             border: none;
             border-radius: 6px;
-            font-size: 16px;
+            font-size: 1rem;
             cursor: pointer;
-            width: 100%;
-            transition: background-color 0.2s;
+            transition: background 0.2s;
         }
-        button:hover {
-            background-color: #2563eb;
+        button:hover { background-color: #0056b3; }
+        #result-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #e9ecef;
+            border-radius: 6px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 1.2rem;
+            word-break: break-all;
+            text-align: left;
+            white-space: pre-line;
         }
-        #result {
-            margin-top: 20px;
-            font-size: 20px;
-            font-weight: bold;
-            color: #1f2937;
-            min-height: 28px;
-            word-wrap: break-word;
-        }
-        .error {
-            color: #ef4444 !important;
-            font-size: 16px !important;
-        }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="calculator-container">
-        <h2>Math Evaluator</h2>
-        <input type="text" id="expressionInput" placeholder="e.g., 2 + 2 * (3^2)">
-        <button onclick="calculate()">Calculate</button>
-        <div id="result"></div>
+<div class="container">
+    <h2>Expression Evaluator</h2>
+    
+    <div class="input-group" id="main-input">
+        <label for="expressionInput">Math Expression</label>
+        <input type="text" id="expressionInput" placeholder="e.g., 10 / 3 or PI * 2">
     </div>
 
+    <div class="input-group">
+        <label for="terminationMethod">Termination Method</label>
+        <select id="terminationMethod" onchange="onChangeTermMethod(this)" style="margin-bottom: 1.5rem;">
+            <option value="none">None</option>
+            <option value="rounding">Rounding</option>
+            <option value="chopping">Chopping</option>
+        </select> 
+
+        <div id="terminationInput" style="display: None;">
+            <label for="terminationDigit">Termination Digit</label>
+            <input type="number" id="terminationDigit" placeholder="1" min="1" max="8" step="1" value="1"></input>
+        </div>
+    </div>
+
+    <button onclick="calculate()" style="margin-bottom: 1.5rem;">Calculate</button>
+
+    <label for="result-box">Result:</label>
+    <div id="result-box"></div>
+</div>
     <script>
+        function toDisplay(x) {
+            return Math.trunc(x * 100000000) / 100000000;
+        }
+
+
+        function onChangeTermMethod(dropdownElement) {
+            const method = dropdownElement.value;
+            
+            if(method === 'none') {
+                document.getElementById('terminationInput').style.display = "None";
+            } else if(method === 'chopping' || method === 'rounding') {
+                document.getElementById('terminationInput').style.display = "block";
+            }
+        }
+
         function calculate() {
             var expr = document.getElementById('expressionInput').value;
-                
+            var method = document.getElementById('terminationMethod').value;
+            var digit = document.getElementById('terminationDigit').valueAsNumber;
+
             if(expr === '') {
                 return;
             }
 
             var exact = Module.solve_expression(expr);
-            var approx = Module.get_chop(exact, 5);
+            
+            const results = document.getElementById('result-box');
+            results.textContent = 'Exact: ' + exact;
 
-            var abs_error = Module.get_absolute_error(exact, approx);
-            var rel_error = Module.get_relative_error(exact, approx);
-            var sig_digits = Module.get_sig_digits(rel_error);
-            var mabs_error = Module.get_max_abs_error(exact, sig_digits);
+            if(method === 'none') {
+                // show only exact
+            } else {
+                var approx;
+            
+                if(method == 'chopping') {
+                    approx = toDisplay(Module.solve_expression_chop(expr, digit));
+                    results.textContent += '\nChopped: ' + approx;
+                } else if(method == 'rounding') {
+                    approx = toDisplay(Module.solve_expression_round(expr, digit));
+                    results.textContent += '\nRound: ' + approx;
+                }
 
-            console.log(expr + ' => ' + exact);
-            console.log('approx     => ' + approx);
-            console.log('abs_error  => ' + abs_error);
-            console.log('rel_error  => ' + rel_error);
-            console.log('sig_digits => ' + sig_digits);
-            console.log('mabs_error =>' + mabs_error);
+                results.textContent += '\n' + Module.get_all_errors(exact, approx);
+            }
+
+            // const toBold = {'Exact', 'Chopped', 'Round', 'Absolute Error', 'Relative Error', 'Significant Digits', 'Max Absolute Error'};
+            
         }
-
-
 
         Module.onRuntimeInitialized = () => {
             console.log('WASM module initialized...');
             
             const input = document.getElementById("expressionInput");
-
             input.addEventListener("keypress", function(event) {
               if (event.key === "Enter") {
                 event.preventDefault();

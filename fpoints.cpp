@@ -1,8 +1,10 @@
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <stack>
 #include <cmath>
 #include <algorithm>
+#include <iomanip>
 
 #if __has_include(<emscripten.h>)
 
@@ -138,16 +140,25 @@ double ieee_to_decimal(std::string binary) {
 }
 
 double get_chop(double n, int sdigit) {
-    if(0.0 == n || !std::isfinite(n)) {
+    if(0.0 == n || !std::isfinite(n) || sdigit < 1) {
         return n;
     }
 
+    /*
     double scale = std::pow(10.0, std::floor(std::log10(std::fabs(n))) - sdigit + 1);
     double scaled = n / scale;
     double chop = std::trunc(scaled);
     double chopped = chop * scale;
+    */
+    
+    double d = std::ceil(std::log10(std::abs(n)));
+    double power = std::pow(10, sdigit - d);
 
-    return chopped;
+    // 2. Shift, truncate, and shift back
+    // We use std::trunc to "chop" toward zero
+    return std::trunc(n * power) / power;
+
+    // return chopped;
 }
 
 double get_chop_unnormalized(double n, int sdigit) {
@@ -338,7 +349,7 @@ double evaluate(double a, double b, char oper) {
     return result;
 }
 
-double chop_evaluate(double a, double b, char oper, int sig) {
+double evaluate_chop(double a, double b, char oper, int sig) {
     a = get_chop(a, sig);
     b = get_chop(b, sig);
 
@@ -347,7 +358,7 @@ double chop_evaluate(double a, double b, char oper, int sig) {
     return get_chop(result, sig);
 }
 
-double round_evaluate(double a, double b, char oper, int place) {
+double evaluate_round(double a, double b, char oper, int place) {
     a = get_round(a, place);
     b = get_round(b, place);
 
@@ -399,46 +410,7 @@ void solve_expression_helper(std::stack<double>& nums, std::stack<char>& opers) 
     nums.pop();
     char o = opers.top();
     opers.pop();
-
     nums.push(evaluate(a, b, o));
-}
-
-double get_absolute_error(double exact, double approximate) {
-    return std::abs(exact - approximate);
-}
-
-double get_relative_error(double exact, double approximate) {
-    return std::abs(exact - approximate) / std::abs(exact);
-}
-
-int get_sig_digits(double rel_error) {
-    if(0 == rel_error) {
-        return -1;
-    }
-    
-    int sdig = std::floor(1 - std::log10(2*rel_error));
-
-    /*
-    while(true) {
-        double curr = 5.0 / std::pow(10.0, sdig);
-
-        if(curr >= rel_error && (5.0 / std::pow(10.0, sdig + 1)) < rel_error) {
-            break;
-        }
-
-        if(curr >= rel_error) {
-            sdig++;
-        } else {
-            sdig--;
-        }
-    }
-    */
-    
-    return sdig;
-}
-
-double get_max_abs_error(double exact, int sig_digits) {
-    return 5.0 * std::pow(10.0, -sig_digits) * std::fabs(exact);
 }
 
 double solve_expression(std::string expr) {
@@ -501,9 +473,230 @@ double solve_expression(std::string expr) {
     while(!opers.empty()) {
         solve_expression_helper(nums, opers); 
     }
-
+    
     return nums.top(); // last number in stack is the answer 
 }
+
+
+void solve_expression_helper_chop(std::stack<double>& nums, std::stack<char>& opers, int chop) {
+    if(nums.size() < 2) {
+        throw std::runtime_error("Missing operand");
+    }
+
+    if(opers.empty() || opers.top() == '(') {
+        throw std::runtime_error("Invalid expression");
+    }
+
+    double b = nums.top();
+    nums.pop();
+    double a = nums.top();
+    nums.pop();
+    char o = opers.top();
+    opers.pop();
+
+    nums.push(evaluate_chop(a, b, o, chop));
+}
+
+double solve_expression_chop(std::string expr, int chop) {
+    remove_whitespace(expr);
+    replace_constants(expr);
+
+    std::stack<double> nums;
+    std::stack<char> opers;
+
+    int i = 0;
+    while(i < expr.length()) {
+        // digit 
+        if(is_digit(expr[i])) {
+            int num_len;
+            nums.push(get_num_from_index(i, expr, &num_len));
+            i += num_len - 1;
+        } 
+
+        // operator (+, -, *, /, ^)
+        else if(is_operator(expr[i])) {
+            
+            // check if '-' is a start of a negative number or is an operator 
+            if(expr[i] == '-' && (i == 0 || is_operator(expr[i-1]) || expr[i-1] == '(') && is_digit(expr[i+1])) {
+                int num_len;
+                nums.push(get_num_from_index(i, expr, &num_len));
+                i += num_len - 1;
+            } else {
+                int preced_curr = get_precedence(expr[i]);
+                int preced_top = -1;
+                while(!opers.empty() 
+                        && opers.top() != '(' 
+                        && (preced_top = get_precedence(opers.top()) > preced_curr
+                            || (preced_curr == preced_top && get_associative(expr[i]) == -1))) {
+                    solve_expression_helper_chop(nums, opers, chop); 
+                }
+                
+                opers.push(expr[i]);
+            }
+        } 
+
+        // left parenthesis
+        else if(expr[i] == '(') {
+            opers.push('(');
+        } 
+
+        // right parenthesis
+        else if(expr[i] == ')') {
+            while(!opers.empty() && opers.top() != '(') {
+                solve_expression_helper_chop(nums, opers, chop); 
+            }
+           
+            if(!opers.empty() && opers.top() == '(') {
+                opers.pop();
+            }
+        } 
+
+        i++;
+    }
+
+    while(!opers.empty()) {
+        solve_expression_helper_chop(nums, opers, chop); 
+    }
+    
+    return get_chop(nums.top(), chop); // last number in stack is the answer 
+}
+
+void solve_expression_helper_round(std::stack<double>& nums, std::stack<char>& opers, int digit) {
+    if(nums.size() < 2) {
+        throw std::runtime_error("Missing operand");
+    }
+
+    if(opers.empty() || opers.top() == '(') {
+        throw std::runtime_error("Invalid expression");
+    }
+
+    double b = nums.top();
+    nums.pop();
+    double a = nums.top();
+    nums.pop();
+    char o = opers.top();
+    opers.pop();
+
+    nums.push(evaluate_round(a, b, o, digit));
+}
+
+double solve_expression_round(std::string expr, int digit) {
+    remove_whitespace(expr);
+    replace_constants(expr);
+
+    std::stack<double> nums;
+    std::stack<char> opers;
+
+    int i = 0;
+    while(i < expr.length()) {
+        // digit 
+        if(is_digit(expr[i])) {
+            int num_len;
+            nums.push(get_num_from_index(i, expr, &num_len));
+            i += num_len - 1;
+        } 
+
+        // operator (+, -, *, /, ^)
+        else if(is_operator(expr[i])) {
+            
+            // check if '-' is a start of a negative number or is an operator 
+            if(expr[i] == '-' && (i == 0 || is_operator(expr[i-1]) || expr[i-1] == '(') && is_digit(expr[i+1])) {
+                int num_len;
+                nums.push(get_num_from_index(i, expr, &num_len));
+                i += num_len - 1;
+            } else {
+                int preced_curr = get_precedence(expr[i]);
+                int preced_top = -1;
+                while(!opers.empty() 
+                        && opers.top() != '(' 
+                        && (preced_top = get_precedence(opers.top()) > preced_curr
+                            || (preced_curr == preced_top && get_associative(expr[i]) == -1))) {
+                    solve_expression_helper_round(nums, opers, digit); 
+                }
+                
+                opers.push(expr[i]);
+            }
+        } 
+
+        // left parenthesis
+        else if(expr[i] == '(') {
+            opers.push('(');
+        } 
+
+        // right parenthesis
+        else if(expr[i] == ')') {
+            while(!opers.empty() && opers.top() != '(') {
+                solve_expression_helper_round(nums, opers, digit); 
+            }
+           
+            if(!opers.empty() && opers.top() == '(') {
+                opers.pop();
+            }
+        } 
+
+        i++;
+    }
+
+    while(!opers.empty()) {
+        solve_expression_helper_round(nums, opers, digit); 
+    }
+
+    return get_round(nums.top(), digit); // last number in stack is the answer 
+}
+
+
+
+
+/*
+ *
+ * ERROR ANALYSIS:
+ * 
+ * get_absolute_error();
+ * get_relative_error();
+ * get_sig_digits_error();
+ * get_max_abs_error();
+ *
+ *
+*/
+
+double get_absolute_error(double exact, double approximate) {
+    return std::abs(exact - approximate);
+}
+
+double get_relative_error(double exact, double approximate) {
+    return std::abs(exact - approximate) / std::abs(exact);
+}
+
+int get_sig_digits(double rel_error) {
+    if(0 == rel_error) {
+        return -1;
+    }
+    
+    int sdig = std::floor(1 - std::log10(2*rel_error));
+
+    /*
+    while(true) {
+        double curr = 5.0 / std::pow(10.0, sdig);
+
+        if(curr >= rel_error && (5.0 / std::pow(10.0, sdig + 1)) < rel_error) {
+            break;
+        }
+
+        if(curr >= rel_error) {
+            sdig++;
+        } else {
+            sdig--;
+        }
+    }
+    */
+    
+    return sdig;
+}
+
+double get_max_abs_error(double exact, int sig_digits) {
+    return 5.0 * std::pow(10.0, -sig_digits) * std::fabs(exact);
+}
+
 
 
 
@@ -519,6 +712,17 @@ double solve_expression(std::string expr) {
  *
 */
 
+std::string get_all_errors(double e, double a) {
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(8);
+    ss << "Absolute Error: " << get_absolute_error(e, a) << '\n';
+    ss << "Relative Error: " << get_relative_error(e, a) << '\n';
+    ss << "Significant Digits: " << get_sig_digits(get_relative_error(e, a)) << '\n';
+    ss << "Max Absolute Error: " << get_max_abs_error(e, get_sig_digits(get_relative_error(e, a))) << '\n';
+
+    return ss.str();
+}
+
 #if HAS_EMSCRIPTEN
 
     EMSCRIPTEN_BINDINGS(my_module) {
@@ -527,23 +731,22 @@ double solve_expression(std::string expr) {
         emscripten::function("ieee_to_decimal", &ieee_to_decimal);
         emscripten::function("decimal_to_ieee", &decimal_to_ieee);
         emscripten::function("solve_expression", &solve_expression);
+        emscripten::function("solve_expression_chop", &solve_expression_chop);
+        emscripten::function("solve_expression_round", &solve_expression_round);
         emscripten::function("get_chop", &get_chop);
         emscripten::function("get_round", &get_round);
         emscripten::function("get_absolute_error", &get_absolute_error);
         emscripten::function("get_relative_error", &get_relative_error);
         emscripten::function("get_sig_digits", &get_sig_digits);
         emscripten::function("get_max_abs_error", &get_max_abs_error);
+        emscripten::function("get_all_errors", &get_all_errors);
     }
 
 #endif
 
 
 int main() {
-    double result = solve_expression("PI^PI");
-    double approx = 36.462;
-    double re = get_relative_error(result, approx);
-    int sigdig = get_sig_digits(re);
+    std::cout << solve_expression_chop("pi^pi", 1);
 
-    std::cout << sigdig << std::endl;
     return 0; 
-}
+}<span id="targetWord">
