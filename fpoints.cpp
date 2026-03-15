@@ -454,6 +454,10 @@ double solve_expression(std::string expr) {
         // left parenthesis
         else if(expr[i] == '(') {
             opers.push('(');
+            
+            if(i > 0 && is_digit(expr[i-1])) {
+                opers.push('*');
+            }
         } 
 
         // right parenthesis
@@ -625,6 +629,10 @@ double solve_expression_round(std::string expr, int digit) {
         // left parenthesis
         else if(expr[i] == '(') {
             opers.push('(');
+            
+            if(i > 0 && is_digit(expr[i-1])) {
+                opers.push('*');
+            }
         } 
 
         // right parenthesis
@@ -735,6 +743,7 @@ std::string get_all_errors(double e, double a) {
         emscripten::function("ieee_to_decimal", &ieee_to_decimal);
         emscripten::function("decimal_to_ieee", &decimal_to_ieee);
         emscripten::function("solve_expression", &solve_expression);
+
         emscripten::function("solve_expression_chop", &solve_expression_chop);
         emscripten::function("solve_expression_round", &solve_expression_round);
         emscripten::function("get_chop", &get_chop);
@@ -750,7 +759,7 @@ std::string get_all_errors(double e, double a) {
 
 
 int main() {
-    std::cout << solve_expression_chop("pi^pi", 1);
+    std::cout << solve_expression("2(3)");
 
     return 0; 
 }
