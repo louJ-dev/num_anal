@@ -831,12 +831,18 @@ double get_max_abs_error(double exact, int sig_digits) {
 */
 
 std::string get_all_errors(double e, double a) {
+    double abs_err = get_absolute_error(e, a);
+    double rel_err = get_relative_error(e, a);
+    int sig_dig = get_sig_digits(rel_err);
+    double mabs_err = get_max_abs_error(e, sig_dig);
+
+
     std::stringstream ss;
     ss << std::fixed << std::setprecision(8);
-    ss << "Absolute Error: " << get_absolute_error(e, a) << '\n';
-    ss << "Relative Error: " << get_relative_error(e, a) << '\n';
-    ss << "Significant Digits: " << get_sig_digits(get_relative_error(e, a)) << '\n';
-    ss << "Max Absolute Error: " << get_max_abs_error(e, get_sig_digits(get_relative_error(e, a))) << '\n';
+    ss << "Absolute Error: " << abs_err << '\n';
+    ss << "Relative Error: " << rel_err << '\n';
+    ss << "Significant Digits: " << (sig_dig == -1 ? "Exact and Approximate are equal" : std::to_string(sig_dig)) << '\n';
+    ss << "Max Absolute Error: " << (sig_dig == -1 ? "Exact and Approximate are equal" : std::to_string(mabs_err)) << '\n';
 
     return ss.str();
 }
