@@ -538,6 +538,10 @@ double solve_expression_chop(std::string expr, int chop) {
         // left parenthesis
         else if(expr[i] == '(') {
             opers.push('(');
+            
+            if(i > 0 && is_digit(expr[i-1])) {
+                opers.push('*');
+            }
         } 
 
         // right parenthesis
