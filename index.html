@@ -177,19 +177,20 @@
                 }
             }
 
+            varsContainer.innerHTML = ''; // clears the result area
             for(const [k, v] of expVar) {
-                if(!vars.has(k)) {
+                if(vars.has(k)) {
+                    const entry = document.createElement('div');
+                    entry.className = 'variable-entry';
+                    entry.innerHTML = `
+                        <label for="var-${k}">${k}=</label>
+                        <input id=var-${k} type="text" value="${v}" onchange="setVariable('${k}')"></input>
+                    `;
+
+                    varsContainer.appendChild(entry);
+                } else {
                     expVar.delete(k);
                 }
-            }
-
-            varsContainer.innerHTML = '';
-            for(const [k, v] of expVar) {
-                const entry = document.createElement('div');
-                entry.className = 'variable-entry';
-                entry.innerHTML = `<label for="var-${k}">${k}=</label><input id=var-${k} type="text" value="${v}" onchange="setVariable('${k}')"></input>`;
-
-                varsContainer.appendChild(entry);
             }
         }
 
