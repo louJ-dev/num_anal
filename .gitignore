@@ -1,5 +1,3 @@
 *.out
 module.wasm
 module.js
-
-/build/
