@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Math Expression Evaluator</title>
-    
-    <link rel='stylesheet' href='style.css'>
-    <script src="/build/module.js"></script>
+
+    <!-- Relative path to CSS -->
+    <link rel="stylesheet" href="./style.css">
+
+    <!-- Load Emscripten module.js from same folder -->
+    <script src="./module.js"></script>
+
     <style>
         .tab-btn {
             text-align: left;
@@ -15,7 +19,7 @@
             font-size: 2rem;
             background-color: white;
         }
-        
+
         .tab-btn-unselected {
             text-align: left;
             width: auto;
@@ -25,6 +29,7 @@
             border: none;
             color: gray;
         }
+
         #conversion-group {
             display: none;
         }
@@ -33,11 +38,13 @@
 <body>
 
 <div class="container">
+    <!-- Tabs -->
     <div style="display: row; margin-bottom: 2rem">
         <button class="tab-btn" id="btn-tab1" onclick="openTab(event, 'tab1')">Expression Evaluator</button>
         <button class="tab-btn-unselected" id="btn-tab2" onclick="openTab(event, 'tab2')">Conversion</button>
     </div>
-    
+
+    <!-- Expression Evaluator -->
     <div id="expr-eval-group">
         <div class="input-group" id="main-input">
             <label for="expressionInput">Math Expression</label>
@@ -55,11 +62,11 @@
                 <option value="none">None</option>
                 <option value="rounding">Rounding</option>
                 <option value="chopping">Chopping</option>
-            </select> 
+            </select>
 
-            <div id="terminationInput" style="display: None;">
+            <div id="terminationInput" style="display: none;">
                 <label for="terminationDigit">Termination Digit</label>
-                <input type="number" id="terminationDigit" placeholder="1" min="1" max="8" step="1" value="1"></input>
+                <input type="number" id="terminationDigit" placeholder="1" min="1" max="8" step="1" value="1">
             </div>
         </div>
 
@@ -71,20 +78,21 @@
         </div>
     </div>
 
+    <!-- Conversion -->
     <div id="conversion-group">
         <div class="input-group" id="main-input">
             <label for="converInput">Value</label>
-            <input type="text" id="converInput" onchange="onChangeConMethod(this)" >
+            <input type="text" id="converInput" onchange="onChangeConMethod(this)">
         </div>
-        
+
         <div class="input-group">
-            <label for="convertMethod">Termination Method</label>
+            <label for="convertMethod">Conversion Method</label>
             <select id="convertMethod" style="margin-bottom: 1.5rem;">
                 <option value="binaryToDecimal">Binary to Decimal</option>
                 <option value="decimalToBinary">Decimal to Binary</option>
                 <option value="decimalToIEEE">Decimal to IEEE</option>
                 <option value="ieeeToDecimal">IEEE to Decimal</option>
-            </select> 
+            </select>
         </div>
 
         <button class="button-main" onclick="convert()" style="margin-bottom: 1.5rem;">Convert</button>
@@ -94,215 +102,126 @@
             <div id="conv-result-box"></div>
         </div>
     </div>
-
 </div>
-    <script>
-        function openTab(e, tab) {
-            if(tab === 'tab1') {
-                document.getElementById('btn-tab1').className = 'tab-btn';
-                document.getElementById('btn-tab2').className = 'tab-btn-unselected';
 
-                document.getElementById('expr-eval-group').style.display = 'block';
-                document.getElementById('conversion-group').style.display = 'none';
-                document.getElementById('result-group').style.display = 'none';
-            } else if(tab === 'tab2') {
-                document.getElementById('btn-tab1').className = 'tab-btn-unselected';
-                document.getElementById('btn-tab2').className = 'tab-btn';
-
-                document.getElementById('expr-eval-group').style.display = 'none';
-                document.getElementById('conversion-group').style.display = 'block';
-                document.getElementById('conv-result-group').style.display = 'none';
-            }
-        }
-
-        function toDisplay(x) {
-            return Math.trunc(x * 100000000) / 100000000;
-        }
-
-        function getVariables(expr) {
-            const numRegEx = /^\d+$/;
-            const letRegEx = /^[a-zA-Z]$/;
-            const vars = [];
-
-            for(var i = 0; i < expr.length; i++) {
-                var curr = expr[i];
-                if(letRegEx.test(curr)) {
-                    if(curr == 'P' && i + 1 < expr.length && expr[i+1] == 'I') { i += 2; }
-                    else if(curr == 'p' && i + 1 < expr.length && expr[i+1] == 'i') { i += 2; }
-                    else if(curr == 'e' || curr == 'E') { i += 1; }
-                    else { vars.push(curr); }
-                }
-            }
-
-            return new Set(vars);
-        }
-
-        const expVar = new Map();
-
-        function setVariable(key) {
-            const holder = document.getElementById('var-' + key);
-            expVar.set(key, holder.value);
-
-        }
-
-        
-        // BUG:
-        //  ^ operator not working with parenthesis 
-        //
-
-
-        // problem with pi or constants not providing right value
-        // 
-        // TODO:
-        //  binary operations
-        //  add functions?
-
-        function onChangeConMethod(convmethod) {
-            const method = convmethod.value;
-            if(method === 'binaryToDecimal') {
-                convmethod.placeholder = '110111';
-            } else if(method === 'decimalToBinary') {
-                convmethod.placeholder = '67';
-            } else if(method === 'ieeeToDecimal') {
-                convmethod.placeholder = '0100000001010000110000000000000000000000000000000000000000000000';
-            } else if(method === 'decimalToIEEE') {
-                convmethod.placeholder = '67';
-            } 
-        }
-
-        function onChangeExpression(newExpr) {
-            const vars = getVariables(newExpr);
-            const varsGroup = document.getElementById('variables-input');
-            const varsContainer = document.getElementById('variables-holder');
-
-            if(vars.size === 0) {
-                varsGroup.style.display = 'none';
-                return;
-            }
-
-            varsGroup.style.display = 'block';
-            
-            for(const v of vars) {
-                if(!expVar.has(v)) {
-                    expVar.set(v, 0);
-                }
-            }
-
-            varsContainer.innerHTML = ''; // clears the result area
-            for(const [k, v] of expVar) {
-                if(vars.has(k)) {
-                    const entry = document.createElement('div');
-                    entry.className = 'variable-entry';
-                    entry.innerHTML = `
-                        <label for="var-${k}">${k}=</label>
-                        <input id=var-${k} type="text" value="${v}" onchange="setVariable('${k}')"></input>
-                    `;
-
-                    varsContainer.appendChild(entry);
-                } else {
-                    expVar.delete(k);
-                }
-            }
-        }
-
-        function onChangeTermMethod(dropdownElement) {
-            const method = dropdownElement.value;
-            
-            if(method === 'none') {
-                document.getElementById('terminationInput').style.display = "None";
-            } else if(method === 'chopping' || method === 'rounding') {
-                document.getElementById('terminationInput').style.display = "block";
-            }
-        }
-
-        function convert() {
-            var toConv = document.getElementById('converInput').value;
-            const method = document.getElementById('convertMethod').value;
-            console.log(method); 
-            document.getElementById('conv-result-group').style.display = 'block';
-            
-            const results = document.getElementById('conv-result-box');
-            results.textContent = '';
-            if(method == 'binaryToDecimal') {
-                results.textContent += 'Decimal: ' + Module.binary_to_decimal(toConv);
-            } else if(method == 'decimalToBinary') {
-                results.textContent += 'Binary: ' + Module.decimal_to_binary(parseFloat(toConv));
-            } else if(method == 'ieeeToDecimal') {
-                results.textContent += 'Decimal: ' + Module.ieee_to_decimal(toConv);
-            } else if(method == 'decimalToIEEE') {
-                results.textContent += 'IEEE: ' + Module.decimal_to_ieee(parseFloat(toConv));
-            }
-        }
-
-
-        function calculate() {
-            var expr = document.getElementById('expressionInput').value;
-            const method = document.getElementById('terminationMethod').value;
-            const digit = document.getElementById('terminationDigit').valueAsNumber;
-
-            if(expr === '') { return; }
-
-            for(const [k, v] of expVar) {
-                expr = expr.replaceAll(k, '(' + v + ')');
-            }
-
-            console.log(expr);
-
-            var exact = Module.solve_expression(expr);
-            
-            document.getElementById('result-group').style.display = 'block';
-            
-            const results = document.getElementById('result-box');
-            results.textContent = 'Exact: ' + exact;
-
-            if(method === 'none') {
-                // show only exact
-            } else {
-                var approx;
-            
-                if(method == 'chopping') {
-                    approx = toDisplay(Module.solve_expression_chop(expr, digit));
-                    results.textContent += '\nChopped: ' + approx;
-                } else if(method == 'rounding') {
-                    approx = toDisplay(Module.solve_expression_round(expr, digit));
-                    results.textContent += '\nRound: ' + approx;
-                }
-
-                results.textContent += '\n\n' + Module.get_all_errors(exact, approx);
-            }
-
-            // const toBold = {'Exact', 'Chopped', 'Round', 'Absolute Error', 'Relative Error', 'Significant Digits', 'Max Absolute Error'};
-            
-            results.textContent += '\nExact (Binary): ' + Module.decimal_to_binary(exact);
-            results.textContent += '\nExact (IEEE): ' + Module.decimal_to_ieee_spaced(exact);
-
-            if(method != 'none') {
-                results.textContent += '\nApprox (Binary): ' + Module.decimal_to_binary(approx);
-                results.textContent += '\nApprox (IEEE): ' + Module.decimal_to_ieee_spaced(approx);
-            }
-        }
-
-        Module.onRuntimeInitialized = () => {
-            console.log('WASM module initialized...');
-            
-            const input = document.getElementById("expressionInput");
-            input.addEventListener("keypress", function(event) {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                onChangeExpression(input.value);
-                calculate();
-              }
-            });
-
-            input.addEventListener('input', e => {
-                onChangeExpression(e.target.value);
-            });       
-            
-            document.getElementById('result-group').style.display = 'none';
-            document.getElementById('variables-input').style.display = 'none';
+<script>
+    // Tabs
+    function openTab(e, tab) {
+        if(tab === 'tab1') {
+            document.getElementById('btn-tab1').className = 'tab-btn';
             document.getElementById('btn-tab2').className = 'tab-btn-unselected';
-        };
-    </script>
+            document.getElementById('expr-eval-group').style.display = 'block';
+            document.getElementById('conversion-group').style.display = 'none';
+            document.getElementById('result-group').style.display = 'none';
+        } else {
+            document.getElementById('btn-tab1').className = 'tab-btn-unselected';
+            document.getElementById('btn-tab2').className = 'tab-btn';
+            document.getElementById('expr-eval-group').style.display = 'none';
+            document.getElementById('conversion-group').style.display = 'block';
+            document.getElementById('conv-result-group').style.display = 'none';
+        }
+    }
+
+    const expVar = new Map();
+
+    function toDisplay(x) { return Math.trunc(x * 1e8) / 1e8; }
+
+    function setVariable(key) {
+        const holder = document.getElementById('var-' + key);
+        expVar.set(key, holder.value);
+    }
+
+    function onChangeExpression(newExpr) {
+        const vars = new Set();
+        const letRegEx = /^[a-zA-Z]$/;
+        for(let i = 0; i < newExpr.length; i++) {
+            let curr = newExpr[i];
+            if(letRegEx.test(curr)) {
+                if(curr == 'P' && i+1<newExpr.length && newExpr[i+1]=='I'){i+=1;}
+                else if(curr == 'p' && i+1<newExpr.length && newExpr[i+1]=='i'){i+=1;}
+                else if(curr == 'e' || curr == 'E'){}
+                else {vars.add(curr);}
+            }
+        }
+
+        const varsGroup = document.getElementById('variables-input');
+        const varsContainer = document.getElementById('variables-holder');
+        if(vars.size===0){varsGroup.style.display='none'; return;}
+        varsGroup.style.display='block';
+        for(const v of vars){if(!expVar.has(v)){expVar.set(v,0);}}
+        varsContainer.innerHTML='';
+        for(const [k,v] of expVar){
+            if(vars.has(k)){
+                const entry = document.createElement('div');
+                entry.className='variable-entry';
+                entry.innerHTML = `<label for="var-${k}">${k}=</label>
+                                   <input id="var-${k}" type="text" value="${v}" onchange="setVariable('${k}')">`;
+                varsContainer.appendChild(entry);
+            } else {expVar.delete(k);}
+        }
+    }
+
+    function onChangeTermMethod(dropdownElement){
+        const method = dropdownElement.value;
+        document.getElementById('terminationInput').style.display =
+            (method==='none') ? 'none':'block';
+    }
+
+    function onChangeConMethod(convmethod){
+        const method = convmethod.value;
+        if(method==='binaryToDecimal'){convmethod.placeholder='110111';}
+        else if(method==='decimalToBinary'){convmethod.placeholder='67';}
+        else if(method==='ieeeToDecimal'){convmethod.placeholder='0100000001010000110000000000000000000000000000000000000000000000';}
+        else if(method==='decimalToIEEE'){convmethod.placeholder='67';}
+    }
+
+    function convert() {
+        const toConv = document.getElementById('converInput').value;
+        const method = document.getElementById('convertMethod').value;
+        document.getElementById('conv-result-group').style.display='block';
+        const results = document.getElementById('conv-result-box');
+        results.textContent='';
+        if(method=='binaryToDecimal'){results.textContent='Decimal: '+Module.binary_to_decimal(toConv);}
+        else if(method=='decimalToBinary'){results.textContent='Binary: '+Module.decimal_to_binary(parseFloat(toConv));}
+        else if(method=='ieeeToDecimal'){results.textContent='Decimal: '+Module.ieee_to_decimal(toConv);}
+        else if(method=='decimalToIEEE'){results.textContent='IEEE: '+Module.decimal_to_ieee(parseFloat(toConv));}
+    }
+
+    function calculate() {
+        let expr = document.getElementById('expressionInput').value;
+        const method = document.getElementById('terminationMethod').value;
+        const digit = document.getElementById('terminationDigit').valueAsNumber;
+
+        if(expr===''){return;}
+        for(const [k,v] of expVar){expr=expr.replaceAll(k,'('+v+')');}
+
+        const exact = Module.solve_expression(expr);
+        document.getElementById('result-group').style.display='block';
+        const results = document.getElementById('result-box');
+        results.textContent='Exact: '+exact;
+
+        if(method!=='none'){
+            let approx;
+            if(method==='chopping'){approx=toDisplay(Module.solve_expression_chop(expr,digit)); results.textContent+='\nChopped: '+approx;}
+            else if(method==='rounding'){approx=toDisplay(Module.solve_expression_round(expr,digit)); results.textContent+='\nRound: '+approx;}
+            results.textContent+='\n\n'+Module.get_all_errors(exact,approx);
+            results.textContent+='\nExact (Binary): '+Module.decimal_to_binary(exact);
+            results.textContent+='\nExact (IEEE): '+Module.decimal_to_ieee_spaced(exact);
+            results.textContent+='\nApprox (Binary): '+Module.decimal_to_binary(approx);
+            results.textContent+='\nApprox (IEEE): '+Module.decimal_to_ieee_spaced(approx);
+        }
+    }
+
+    Module.onRuntimeInitialized = () => {
+        console.log('WASM module initialized...');
+        const input = document.getElementById("expressionInput");
+        input.addEventListener("keypress", e=>{if(e.key==="Enter"){e.preventDefault();onChangeExpression(input.value);calculate();}});
+        input.addEventListener("input", e=>{onChangeExpression(e.target.value);});
+        document.getElementById('result-group').style.display='none';
+        document.getElementById('variables-input').style.display='none';
+        document.getElementById('btn-tab2').className='tab-btn-unselected';
+    };
+</script>
 
 </body>
 </html>
