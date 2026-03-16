@@ -181,6 +181,49 @@ double ieee_to_decimal(std::string binary) {
     return sign * std::pow(2, (e - BIAS)) * fraction;
 }
 
+int get_sig_digits(double rel_error) {
+    if(0 == rel_error) {
+        return -1;
+    }
+    
+    int sdig = std::floor(1 - std::log10(2*rel_error));
+
+    /*
+    while(true) {
+        double curr = 5.0 / std::pow(10.0, sdig);
+
+        if(curr >= rel_error && (5.0 / std::pow(10.0, sdig + 1)) < rel_error) {
+            break;
+        }
+
+        if(curr >= rel_error) {
+            sdig++;
+        } else {
+            sdig--;
+        }
+    }
+    */
+    
+    return sdig;
+}
+
+int get_normalized_exponent(double n) {
+    n = std::abs(n);
+    
+    int exp = 1;
+
+    if(n >= 1) {
+        exp = std::floor(std::log10((int)n)) + 1;
+    } else if (n < 1) {
+        exp = -std::floor(std::log10(n)) - 1;
+    } else {
+        exp = 0;   
+    }
+
+    return exp;
+}
+
+
 double get_chop(double n, int sdigit) {
     if(0.0 == n || !std::isfinite(n) || sdigit < 1) {
         return n;
@@ -193,13 +236,20 @@ double get_chop(double n, int sdigit) {
     double chopped = chop * scale;
     */
     
-    double d = std::ceil(std::log10(std::abs(n)));
-    double power = std::pow(10, sdigit - d);
+    // double d = std::ceil(std::log10(std::abs(n)));
+    // double power = std::pow(10, sdigit - d);
+    
+    int exp = get_normalized_exponent(n);
+    double power = std::pow(10.0, sdigit + exp);
+
+    // double normalized = n * std::pow(10.0, exp);
+
+
+    // return std::trunc(normalized * std::pow(10.0, sdigit)) / ( 
 
     // 2. Shift, truncate, and shift back
     // We use std::trunc to "chop" toward zero
     return std::trunc(n * power) / power;
-
     // return chopped;
 }
 
@@ -247,17 +297,28 @@ double chop_sqrts(double n, int chop) {
     return get_chop(std::sqrt(n), chop);
 }
 
+
 /* BUG: rounding is not implemented properly
  *      floating-point numbers cannot be truely be rounded
  */
 
 double get_round(double n, int place) {
+    /*
     long long int convert = n * std::pow(10, place);
     if(convert % 10 >= 5) {
         convert += 10;
     }
 
     double r = convert / std::pow(10.0, place);
+    */
+
+    if(n == 0) {
+        return 0;
+    }
+    
+    int s = get_normalized_exponent(n);
+    
+    double r = n + (5*std::pow(10.0, s-(place+1)));
     r = get_chop_unnormalized(r, place - 1);
     /*
     
@@ -272,13 +333,22 @@ double get_round(double n, int place) {
 }
 
 double get_round_normalized(double n, int place) {
+    /*
     long long int convert = n * std::pow(10, place);
     if(convert % 10 >= 5) {
         convert += 10;
     }
+*/
 
-    double r = convert / std::pow(10.0, place);
-    r = get_chop_unnormalized(r, place - 1);
+    if(n == 0) {
+        return 0;
+    }
+    
+    int s = get_normalized_exponent(n);
+    
+    double r = (n * std::pow(10.0, s)) + (5 * std::pow(10.0, -(place + 1)));
+    r *= std::pow(10.0, -s);
+    r = get_chop_unnormalized(r, place);
     /*
     
     if(std::abs(n - r) <= DISPLAY_PRECISION) {
@@ -417,16 +487,18 @@ double evaluate_chop(double a, double b, char oper, int sig) {
 
     double result = evaluate(a, b, oper);
     
+    std::cout << result << " -> " << get_chop(result, sig) << '\n';
+
     return get_chop(result, sig);
 }
 
 double evaluate_round(double a, double b, char oper, int place) {
-    a = get_round(a, place);
-    b = get_round(b, place);
+    a = get_round_normalized(a, place);
+    b = get_round_normalized(b, place);
 
     double result = evaluate(a, b, oper);
     
-    return get_round(result, place);
+    return get_round_normalized(result, place);
 }
 
 void remove_whitespace(std::string& str) {
@@ -629,7 +701,7 @@ void solve_expression_helper_chop(std::stack<double>& nums, std::stack<char>& op
     nums.push(evaluate_chop(a, b, o, chop));
 }
 
-double solve_expression_chop(std::string expr) {
+double solve_expression_chop(std::string expr, int digit) {
     remove_whitespace(expr);
     replace_constants(expr);
 
@@ -677,7 +749,7 @@ double solve_expression_chop(std::string expr) {
                             // FIX: Added parentheses around the assignment
                             && ((preced_top = get_precedence(opers.top())) > preced_curr
                                 || (preced_curr == preced_top && get_associative('*') == -1))) {
-                        solve_expression_helper_chop(nums, opers); 
+                        solve_expression_helper_chop(nums, opers, digit); 
                     }
                     opers.push('*');
                 }
@@ -692,7 +764,7 @@ double solve_expression_chop(std::string expr) {
                         // FIX: Added parentheses around the assignment
                         && ((preced_top = get_precedence(opers.top())) > preced_curr
                             || (preced_curr == preced_top && get_associative(expr[i]) == -1))) {
-                    solve_expression_helper_chop(nums, opers); 
+                    solve_expression_helper_chop(nums, opers, digit); 
                 }
                 opers.push(expr[i]);
             }
@@ -711,7 +783,7 @@ double solve_expression_chop(std::string expr) {
                         && opers.top() != '(' 
                         && ((preced_top = get_precedence(opers.top())) > preced_curr
                             || (preced_curr == preced_top && get_associative('*') == -1))) {
-                    solve_expression_helper_chop(nums, opers); 
+                    solve_expression_helper_chop(nums, opers, digit); 
                 }
                 opers.push('*');
             }
@@ -722,7 +794,7 @@ double solve_expression_chop(std::string expr) {
         // right parenthesis
         else if(expr[i] == ')') {
             while(!opers.empty() && opers.top() != '(') {
-                solve_expression_helper_chop(nums, opers); 
+                solve_expression_helper_chop(nums, opers, digit); 
             }
             
             // Added check to prevent popping an empty stack on mismatched parentheses
@@ -737,7 +809,7 @@ double solve_expression_chop(std::string expr) {
     }
 
     while(!opers.empty()) {
-        solve_expression_helper_chop(nums, opers); 
+        solve_expression_helper_chop(nums, opers, digit); 
     }
     
     // FIX: Catch empty expressions to prevent calling .top() on an empty stack
@@ -745,8 +817,20 @@ double solve_expression_chop(std::string expr) {
         throw std::runtime_error("Empty or invalid expression");
     }
     
-    return get_chop_unnormalized(nums.top(), DISPLAY_PRECISION); 
+    return get_chop_unnormalized(nums.top(), digit); 
 }
+
+
+
+/*
+ *
+ *
+ *
+ *  ROUND
+ *
+ *
+ *
+ */
 
 void solve_expression_helper_round(std::stack<double>& nums, std::stack<char>& opers, int digit) {
     if(nums.size() < 2) {
@@ -815,7 +899,7 @@ double solve_expression_round(std::string expr, int digit) {
                             // FIX: Added parentheses around the assignment
                             && ((preced_top = get_precedence(opers.top())) > preced_curr
                                 || (preced_curr == preced_top && get_associative('*') == -1))) {
-                        solve_expression_helper_round(nums, opers); 
+                        solve_expression_helper_round(nums, opers, digit); 
                     }
                     opers.push('*');
                 }
@@ -830,7 +914,7 @@ double solve_expression_round(std::string expr, int digit) {
                         // FIX: Added parentheses around the assignment
                         && ((preced_top = get_precedence(opers.top())) > preced_curr
                             || (preced_curr == preced_top && get_associative(expr[i]) == -1))) {
-                    solve_expression_helper_round(nums, opers); 
+                    solve_expression_helper_round(nums, opers, digit); 
                 }
                 opers.push(expr[i]);
             }
@@ -849,7 +933,7 @@ double solve_expression_round(std::string expr, int digit) {
                         && opers.top() != '(' 
                         && ((preced_top = get_precedence(opers.top())) > preced_curr
                             || (preced_curr == preced_top && get_associative('*') == -1))) {
-                    solve_expression_helper_round(nums, opers); 
+                    solve_expression_helper_round(nums, opers, digit); 
                 }
                 opers.push('*');
             }
@@ -860,7 +944,7 @@ double solve_expression_round(std::string expr, int digit) {
         // right parenthesis
         else if(expr[i] == ')') {
             while(!opers.empty() && opers.top() != '(') {
-                solve_expression_helper_round(nums, opers); 
+                solve_expression_helper_round(nums, opers, digit); 
             }
             
             // Added check to prevent popping an empty stack on mismatched parentheses
@@ -875,7 +959,7 @@ double solve_expression_round(std::string expr, int digit) {
     }
 
     while(!opers.empty()) {
-        solve_expression_helper_round(nums, opers); 
+        solve_expression_helper_round(nums, opers, digit); 
     }
     
     // FIX: Catch empty expressions to prevent calling .top() on an empty stack
@@ -883,8 +967,15 @@ double solve_expression_round(std::string expr, int digit) {
         throw std::runtime_error("Empty or invalid expression");
     }
     
-    return get_round(nums.top(), DISPLAY_PRECISION); 
+    return get_round(nums.top(), digit); 
 }
+
+
+
+
+
+
+
 
 
 
@@ -907,32 +998,6 @@ double get_absolute_error(double exact, double approximate) {
 
 double get_relative_error(double exact, double approximate) {
     return std::abs(exact - approximate) / std::abs(exact);
-}
-
-int get_sig_digits(double rel_error) {
-    if(0 == rel_error) {
-        return -1;
-    }
-    
-    int sdig = std::floor(1 - std::log10(2*rel_error));
-
-    /*
-    while(true) {
-        double curr = 5.0 / std::pow(10.0, sdig);
-
-        if(curr >= rel_error && (5.0 / std::pow(10.0, sdig + 1)) < rel_error) {
-            break;
-        }
-
-        if(curr >= rel_error) {
-            sdig++;
-        } else {
-            sdig--;
-        }
-    }
-    */
-    
-    return sdig;
 }
 
 double get_max_abs_error(double exact, int sig_digits) {
@@ -994,7 +1059,8 @@ std::string get_all_errors(double e, double a) {
 
 
 int main() {
-    std::cout << solve_expression("-2(-3)");
+    std::cout << std::fixed << std::setprecision(10);
+    std::cout << solve_expression_chop("(((5/7)-(0.714251))*(98765.9))+((1/3)/(0.111111))", 5);
 
     return 0; 
 }
