@@ -1,16 +1,22 @@
 name: Build and Deploy Emscripten
+
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -19,14 +25,14 @@ jobs:
         uses: mymindstorm/setup-emsdk@v14
 
       - name: Build Project
-        run: 
-          mkdir build
-          em++ fpoints.cpp -o ./build/module.js -s WASM=1 --bind
+        run: |
+          mkdir -p build
+          em++ fpoints.cpp -o build/module.js -s WASM=1 --bind
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./build
+          path: build
 
       - name: Deploy to GitHub Pages
         id: deployment
