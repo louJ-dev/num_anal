@@ -31,13 +31,14 @@ jobs:
 
       - name: Build Project
         run: |
-          em++ fpoints.cpp -o ./build/module.js -s WASM=1 --bind
+          cp index.html build/
+          em++ fpoints.cpp -o build/module.js -s WASM=1 --bind
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
           name: emscipten-build
-          path: ./build/
+          path: ./build
 
       - name: Deploy to GitHub Pages
         id: deployment
