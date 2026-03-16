@@ -12,33 +12,26 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v14
-        with:
-          # You can pin a specific version (e.g., '3.1.50') or use 'latest'
-          version: latest
-          # Enabling caching speeds up subsequent builds significantly
-          actions-cache-folder: 'emsdk-cache'
 
       - name: Build Project
         run: |
-          cp index.html build/
+          mkdir build
           em++ fpoints.cpp -o build/module.js -s WASM=1 --bind
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: emscipten-build
           path: ./build
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
       - name: Deploy to GitHub Pages
         id: deployment
