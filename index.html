@@ -5,63 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Math Expression Evaluator</title>
     
+    <link rel='stylesheet' href='style.css'>
     <script src="/build/module.js"></script>
-    
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #f4f7f6;
-        }
-        .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 80vw;
-        }
-        h2 { margin-top: 0; color: #333; font-size: 1.5rem; }
-        .input-group { margin-bottom: 1.5rem; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #555; }
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 1rem;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: #007aff;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        button:hover { background-color: #0056b3; }
-        #result-box {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background: #e9ecef;
-            border-radius: 6px;
-            text-align: center;
-            font-family: monospace;
-            font-size: 1.2rem;
-            word-break: break-all;
-            text-align: left;
-            white-space: pre-line;
-        }
-        .hidden { display: none; }
-    </style>
 </head>
 <body>
 
@@ -71,6 +16,11 @@
     <div class="input-group" id="main-input">
         <label for="expressionInput">Math Expression</label>
         <input type="text" id="expressionInput" placeholder="e.g., 10 / 3 or PI * 2">
+    </div>
+
+    <div class="input-group" id="variables-input">
+        <label for="variables-holder">Variables</label>
+        <div id="variables-holder" class="holder"></div>
     </div>
 
     <div class="input-group">
@@ -89,14 +39,88 @@
 
     <button onclick="calculate()" style="margin-bottom: 1.5rem;">Calculate</button>
 
-    <label for="result-box">Result:</label>
-    <div id="result-box"></div>
+    <div id="result-group">
+        <label for="result-box">Result:</label>
+        <div id="result-box"></div>
+    </div>
 </div>
     <script>
         function toDisplay(x) {
             return Math.trunc(x * 100000000) / 100000000;
         }
 
+        function getVariables(expr) {
+            const numRegEx = /^\d+$/;
+            const letRegEx = /^[a-zA-Z]$/;
+            const vars = [];
+
+            for(var i = 0; i < expr.length; i++) {
+                var curr = expr[i];
+                if(letRegEx.test(curr)) {
+                    if(curr == 'P' && i + 1 < expr.length && expr[i+1] == 'I') { i += 2; }
+                    else if(curr == 'p' && i + 1 < expr.length && expr[i+1] == 'i') { i += 2; }
+                    else if(curr == 'e' || curr == 'E') { i += 1; }
+                    else { vars.push(curr); }
+                }
+            }
+
+            return new Set(vars);
+        }
+
+        const expVar = new Map();
+
+        function setVariable(key) {
+            const holder = document.getElementById('var-' + key);
+            expVar.set(key, holder.value);
+
+        }
+
+        
+        // BUG:
+        //  ^ operator not working with parenthesis 
+        //
+
+
+        // problem with pi or constants not providing right value
+        // 
+        // TODO:
+        //  binary operations
+        //  add functions?
+
+        function onChangeExpression(newExpr) {
+            const vars = getVariables(newExpr);
+            const varsGroup = document.getElementById('variables-input');
+            const varsContainer = document.getElementById('variables-holder');
+
+            if(vars.size === 0) {
+                varsGroup.style.display = 'none';
+                return;
+            }
+
+            varsGroup.style.display = 'block';
+            
+            for(const v of vars) {
+                if(!expVar.has(v)) {
+                    expVar.set(v, 0);
+                }
+            }
+
+            varsContainer.innerHTML = ''; // clears the result area
+            for(const [k, v] of expVar) {
+                if(vars.has(k)) {
+                    const entry = document.createElement('div');
+                    entry.className = 'variable-entry';
+                    entry.innerHTML = `
+                        <label for="var-${k}">${k}=</label>
+                        <input id=var-${k} type="text" value="${v}" onchange="setVariable('${k}')"></input>
+                    `;
+
+                    varsContainer.appendChild(entry);
+                } else {
+                    expVar.delete(k);
+                }
+            }
+        }
 
         function onChangeTermMethod(dropdownElement) {
             const method = dropdownElement.value;
@@ -108,16 +132,23 @@
             }
         }
 
-        function calculate() {
-            var expr = document.getElementById('expressionInput').value;
-            var method = document.getElementById('terminationMethod').value;
-            var digit = document.getElementById('terminationDigit').valueAsNumber;
 
-            if(expr === '') {
-                return;
+        function calculate() {
+            const expr = document.getElementById('expressionInput').value;
+            const method = document.getElementById('terminationMethod').value;
+            const digit = document.getElementById('terminationDigit').valueAsNumber;
+
+            if(expr === '') { return; }
+
+            for(const [k, v] of expVar) {
+                expr = expr.replaceAll(k, '(' + v + ')');
             }
 
+            console.log(expr);
+
             var exact = Module.solve_expression(expr);
+            
+            document.getElementById('result-group').style.display = 'block';
             
             const results = document.getElementById('result-box');
             results.textContent = 'Exact: ' + exact;
@@ -135,11 +166,18 @@
                     results.textContent += '\nRound: ' + approx;
                 }
 
-                results.textContent += '\n' + Module.get_all_errors(exact, approx);
+                results.textContent += '\n\n' + Module.get_all_errors(exact, approx);
             }
 
             // const toBold = {'Exact', 'Chopped', 'Round', 'Absolute Error', 'Relative Error', 'Significant Digits', 'Max Absolute Error'};
             
+            results.textContent += '\nExact (Binary): ' + Module.decimal_to_binary(exact);
+            results.textContent += '\nExact (IEEE): ' + Module.decimal_to_ieee_spaced(exact);
+
+            if(method != 'none') {
+                results.textContent += '\nApprox (Binary): ' + Module.decimal_to_binary(approx);
+                results.textContent += '\nApprox (IEEE): ' + Module.decimal_to_ieee_spaced(approx);
+            }
         }
 
         Module.onRuntimeInitialized = () => {
@@ -149,9 +187,17 @@
             input.addEventListener("keypress", function(event) {
               if (event.key === "Enter") {
                 event.preventDefault();
+                onChangeExpression(input.value);
                 calculate();
               }
             });
+
+            input.addEventListener('input', e => {
+                onChangeExpression(e.target.value);
+            });       
+            
+            document.getElementById('result-group').style.display = 'none';
+            document.getElementById('variables-input').style.display = 'none';
         };
     </script>
 
