@@ -29,6 +29,12 @@ jobs:
           mkdir -p build
           em++ fpoints.cpp -o build/module.js -s WASM=1 --bind
 
+      # 🔎 DEBUG STEP
+      - name: Show build files
+        run: |
+          echo "Build folder contents:"
+          ls -R build
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
