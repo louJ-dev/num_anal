@@ -26,19 +26,10 @@ jobs:
 
       - name: Build Project
         run: |
-          mkdir -p build
-          em++ fpoints.cpp -o build/module.js -s WASM=1 --bind
-
-      # 🔎 DEBUG STEP
-      - name: Show build files
-        run: |
-          echo "Build folder contents:"
-          ls -R build
+          em++ fpoints.cpp -o module.js -s WASM=1 --bind
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
-        with:
-          path: build
 
       - name: Deploy to GitHub Pages
         id: deployment
