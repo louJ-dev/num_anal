@@ -230,7 +230,7 @@ double chop_subtract_float(double a, double b, int chop) {
 double chop_multilpy_float(double a, double b, int chop) {
     double ca = get_chop(a, chop);
     double cb = get_chop(b, chop); 
-    return get_chop(ca + cb, chop);
+    return get_chop(ca * cb, chop);
 }
 
 double chop_divide_float(double a, double b, int chop) {
