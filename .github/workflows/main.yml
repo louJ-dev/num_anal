@@ -29,7 +29,7 @@ jobs:
           em++ fpoints.cpp -o ./build/module.js -s WASM=1 --bind
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name: emscipten-build
           path: build/
