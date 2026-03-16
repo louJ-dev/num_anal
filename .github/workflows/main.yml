@@ -19,7 +19,7 @@ jobs:
         uses: mymindstorm/setup-emsdk@v14
 
       - name: Build Project
-        run: |
+        run: 
           mkdir build
           em++ fpoints.cpp -o build/module.js -s WASM=1 --bind
 
