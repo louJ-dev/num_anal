@@ -134,13 +134,11 @@
 
 
         function calculate() {
-            var expr = document.getElementById('expressionInput').value;
-            var method = document.getElementById('terminationMethod').value;
-            var digit = document.getElementById('terminationDigit').valueAsNumber;
+            const expr = document.getElementById('expressionInput').value;
+            const method = document.getElementById('terminationMethod').value;
+            const digit = document.getElementById('terminationDigit').valueAsNumber;
 
-            if(expr === '') {
-                return;
-            }
+            if(expr === '') { return; }
 
             for(const [k, v] of expVar) {
                 expr = expr.replaceAll(k, '(' + v + ')');
