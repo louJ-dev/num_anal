@@ -23,6 +23,11 @@ jobs:
 
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v14
+        with:
+          # You can pin a specific version (e.g., '3.1.50') or use 'latest'
+          version: latest
+          # Enabling caching speeds up subsequent builds significantly
+          actions-cache-folder: 'emsdk-cache'
 
       - name: Build Project
         run: |
