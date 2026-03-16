@@ -18,7 +18,7 @@
 #define BIAS 1023                   // value set for 64-bit 
 #define EPSILON 1e-8                // threshold 
 #define COMPUTE_PRECISION 1e-12     // used for calculations
-#define DISPLAY_PRECISION 8         // used for outputs
+#define DISPLAY_PRECISION 10         // used for outputs
 
 std::string decimal_to_binary(double n) {
     if(0 == n) {
@@ -96,6 +96,48 @@ std::string decimal_to_ieee(double n) {
     }
 
     return sign + ebinary + mantissa;
+}
+
+std::string decimal_to_ieee_spaced(double n) {
+    if(0 == n) {
+        return "0 00000000000 0000000000000000000000000000000000000000000000000000";
+    }
+
+    char sign = '0' + (n < 0); 
+    std::string binary = decimal_to_binary(std::fabs(n));
+
+    int pointIndex = binary.length();
+    for(int i = 0;i<binary.length();i++) {
+        if('.' == binary[i]) {
+            pointIndex = i;
+            break;
+        }
+    }
+    
+    int e = (pointIndex > 0) ? pointIndex - 1: -1;
+    std::string ebinary = decimal_to_binary(e + BIAS);
+    if(ebinary.length() < 11) {
+        ebinary.insert(0, 11 - ebinary.length(), '0');
+    }
+
+    std::string mantissa = "";
+    
+    if(binary.length() > 1) {
+        binary.erase(pointIndex, 1);
+        binary.insert(1, 1, '.');
+        mantissa = binary.substr(2);
+    }
+
+    if(mantissa.length() > 52) {
+        mantissa = mantissa.substr(0, 51);
+    } else {
+        mantissa.append(52 - mantissa.length(), '0');
+    }
+
+    std::stringstream ss;
+    ss << sign << " " << ebinary << " " << mantissa;
+    
+    return ss.str();
 }
 
 double binary_to_decimal(std::string binary) {
@@ -210,6 +252,26 @@ double chop_sqrts(double n, int chop) {
  */
 
 double get_round(double n, int place) {
+    long long int convert = n * std::pow(10, place);
+    if(convert % 10 >= 5) {
+        convert += 10;
+    }
+
+    double r = convert / std::pow(10.0, place);
+    r = get_chop_unnormalized(r, place - 1);
+    /*
+    
+    if(std::abs(n - r) <= DISPLAY_PRECISION) {
+        return r; 
+    }
+    
+    */
+    
+
+    return r;
+}
+
+double get_round_normalized(double n, int place) {
     long long int convert = n * std::pow(10, place);
     if(convert % 10 >= 5) {
         convert += 10;
@@ -514,7 +576,7 @@ double solve_expression(std::string expr) {
         solve_expression_helper(nums, opers); 
     }
     
-    return nums.top(); // last number in stack is the answer 
+    return get_round(nums.top(), DISPLAY_PRECISION); // last number in stack is the answer 
 }
 
 
@@ -854,6 +916,7 @@ std::string get_all_errors(double e, double a) {
         emscripten::function("binary_to_decimal", &binary_to_decimal);
         emscripten::function("ieee_to_decimal", &ieee_to_decimal);
         emscripten::function("decimal_to_ieee", &decimal_to_ieee);
+        emscripten::function("decimal_to_ieee_spaced", &decimal_to_ieee_spaced);
         emscripten::function("solve_expression", &solve_expression);
 
         emscripten::function("solve_expression_chop", &solve_expression_chop);
