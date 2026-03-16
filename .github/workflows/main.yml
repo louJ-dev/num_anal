@@ -37,7 +37,7 @@ jobs:
         uses: actions/upload-pages-artifact@v4
         with:
           name: emscipten-build
-          path: build/
+          path: ./build/
 
       - name: Deploy to GitHub Pages
         id: deployment
