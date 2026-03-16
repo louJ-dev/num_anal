@@ -483,18 +483,10 @@ double solve_expression(std::string expr) {
     std::stack<char> opers;
     
     int i = 0;
- 
-    if(is_operator(expr[0])) {
-        if('+' == expr[0] || '-' == expr[0]){
-            if(1 < expr.length() && !is_digit(expr[1])) {
-                nums.push(0);
-                i++;
-            }
-        } else {
-            throw std::runtime_error("Missing operand");
-        }
-    }
     
+    // Removed the buggy expr[0] check. The while-loop now natively handles
+    // unary operators at the start of the string.
+
     while(i < expr.length()) {
         // digit 
         if(is_digit(expr[i])) {
@@ -506,21 +498,48 @@ double solve_expression(std::string expr) {
         // operator (+, -, *, /, ^)
         else if(is_operator(expr[i])) {
             
-            // check if '-' is a start of a negative number or is an operator 
-            if(expr[i] == '-' && (i == 0 || is_operator(expr[i-1]) || expr[i-1] == '(') && is_digit(expr[i+1])) {
-                int num_len;
-                nums.push(get_num_from_index(i, expr, &num_len));
-                i += num_len - 1;
-            } else {
+            // 1. Unary Plus (e.g., "+5" or "(+5)"): completely ignore it
+            if(expr[i] == '+' && (i == 0 || is_operator(expr[i-1]) || expr[i-1] == '(')) {
+                i++;
+                continue; 
+            }
+            
+            // 2. Unary Minus (e.g., "-5" or "-(5)")
+            else if(expr[i] == '-' && (i == 0 || is_operator(expr[i-1]) || expr[i-1] == '(')) {
+                if(i + 1 < expr.length() && is_digit(expr[i+1])) {
+                    // Negative number attached directly to digits
+                    int num_len;
+                    nums.push(get_num_from_index(i, expr, &num_len));
+                    i += num_len - 1;
+                } else {
+                    // Unary minus before a parenthesis, e.g., -(5)
+                    // Treat it mathematically as "-1 *" 
+                    nums.push(-1.0);
+                    
+                    int preced_curr = get_precedence('*');
+                    int preced_top = -1;
+                    while(!opers.empty() 
+                            && opers.top() != '(' 
+                            // FIX: Added parentheses around the assignment
+                            && ((preced_top = get_precedence(opers.top())) > preced_curr
+                                || (preced_curr == preced_top && get_associative('*') == -1))) {
+                        solve_expression_helper(nums, opers); 
+                    }
+                    opers.push('*');
+                }
+            } 
+            
+            // 3. Normal Binary Operator
+            else {
                 int preced_curr = get_precedence(expr[i]);
                 int preced_top = -1;
-                while(!opers.empty()
+                while(!opers.empty() 
                         && opers.top() != '(' 
-                        && (preced_top = get_precedence(opers.top()) > preced_curr
+                        // FIX: Added parentheses around the assignment
+                        && ((preced_top = get_precedence(opers.top())) > preced_curr
                             || (preced_curr == preced_top && get_associative(expr[i]) == -1))) {
                     solve_expression_helper(nums, opers); 
                 }
-                
                 opers.push(expr[i]);
             }
         } 
@@ -528,34 +547,22 @@ double solve_expression(std::string expr) {
         // left parenthesis
         else if(expr[i] == '(') {
             
-            if(i > 0) {
-                if (is_digit(expr[i-1]) || ')' == expr[i-1]) {
-                    opers.push('(');
-                    opers.push('*');
-                }else if(!opers.empty() && opers.top() == '-') {
-                    opers.pop(); 
-
-                    opers.push('+');
-                    opers.push('*');
-                    if(nums.size() < 1) {
-                        nums.push(0);
-                    }
-                    nums.push(-1);
-                    
-                    opers.push('(');
-                }else if('-' == expr[i-1]) {
-                    opers.pop(); // removes added -
-                    opers.push('+');
-                    opers.push('*');
-                    if(nums.size() < 1) {
-                        nums.push(0);
-                    }
-                    nums.push(-1);
-                    opers.push('(');
-                } 
-            } else {
-                opers.push('(');
+            // FIX: Handle implicit multiplication (e.g., "5(" or ")(") safely
+            if(i > 0 && (is_digit(expr[i-1]) || ')' == expr[i-1])) {
+                int preced_curr = get_precedence('*');
+                int preced_top = -1;
+                
+                // Process the implicit '*' before pushing the '('
+                while(!opers.empty() 
+                        && opers.top() != '(' 
+                        && ((preced_top = get_precedence(opers.top())) > preced_curr
+                            || (preced_curr == preced_top && get_associative('*') == -1))) {
+                    solve_expression_helper(nums, opers); 
+                }
+                opers.push('*');
             }
+            
+            opers.push('(');
         } 
 
         // right parenthesis
@@ -563,9 +570,12 @@ double solve_expression(std::string expr) {
             while(!opers.empty() && opers.top() != '(') {
                 solve_expression_helper(nums, opers); 
             }
-           
+            
+            // Added check to prevent popping an empty stack on mismatched parentheses
             if(!opers.empty() && opers.top() == '(') {
                 opers.pop();
+            } else {
+                throw std::runtime_error("Mismatched parentheses");
             }
         } 
 
@@ -576,8 +586,28 @@ double solve_expression(std::string expr) {
         solve_expression_helper(nums, opers); 
     }
     
-    return get_round(nums.top(), DISPLAY_PRECISION); // last number in stack is the answer 
+    // FIX: Catch empty expressions to prevent calling .top() on an empty stack
+    if (nums.empty()) {
+        throw std::runtime_error("Empty or invalid expression");
+    }
+    
+    return get_round(nums.top(), DISPLAY_PRECISION); 
 }
+
+
+
+
+
+/*
+ *
+ *
+ *  CHOP
+ *
+ *
+ */
+
+
+
 
 
 void solve_expression_helper_chop(std::stack<double>& nums, std::stack<char>& opers, int chop) {
@@ -599,25 +629,17 @@ void solve_expression_helper_chop(std::stack<double>& nums, std::stack<char>& op
     nums.push(evaluate_chop(a, b, o, chop));
 }
 
-double solve_expression_chop(std::string expr, int chop) {
+double solve_expression_chop(std::string expr) {
     remove_whitespace(expr);
     replace_constants(expr);
 
     std::stack<double> nums;
     std::stack<char> opers;
-
+    
     int i = 0;
-
-    if(is_operator(expr[0])) {
-        if('+' == expr[0] || '-' == expr[0]){
-            if(1 < expr.length() && !is_digit(expr[1])) {
-                nums.push(0);
-                i++;
-            }
-        } else {
-            throw std::runtime_error("Missing operand");
-        }
-    }
+    
+    // Removed the buggy expr[0] check. The while-loop now natively handles
+    // unary operators at the start of the string.
 
     while(i < expr.length()) {
         // digit 
@@ -630,21 +652,48 @@ double solve_expression_chop(std::string expr, int chop) {
         // operator (+, -, *, /, ^)
         else if(is_operator(expr[i])) {
             
-            // check if '-' is a start of a negative number or is an operator 
-            if(expr[i] == '-' && (i == 0 || is_operator(expr[i-1]) || expr[i-1] == '(') && is_digit(expr[i+1])) {
-                int num_len;
-                nums.push(get_num_from_index(i, expr, &num_len));
-                i += num_len - 1;
-            } else {
+            // 1. Unary Plus (e.g., "+5" or "(+5)"): completely ignore it
+            if(expr[i] == '+' && (i == 0 || is_operator(expr[i-1]) || expr[i-1] == '(')) {
+                i++;
+                continue; 
+            }
+            
+            // 2. Unary Minus (e.g., "-5" or "-(5)")
+            else if(expr[i] == '-' && (i == 0 || is_operator(expr[i-1]) || expr[i-1] == '(')) {
+                if(i + 1 < expr.length() && is_digit(expr[i+1])) {
+                    // Negative number attached directly to digits
+                    int num_len;
+                    nums.push(get_num_from_index(i, expr, &num_len));
+                    i += num_len - 1;
+                } else {
+                    // Unary minus before a parenthesis, e.g., -(5)
+                    // Treat it mathematically as "-1 *" 
+                    nums.push(-1.0);
+                    
+                    int preced_curr = get_precedence('*');
+                    int preced_top = -1;
+                    while(!opers.empty() 
+                            && opers.top() != '(' 
+                            // FIX: Added parentheses around the assignment
+                            && ((preced_top = get_precedence(opers.top())) > preced_curr
+                                || (preced_curr == preced_top && get_associative('*') == -1))) {
+                        solve_expression_helper_chop(nums, opers); 
+                    }
+                    opers.push('*');
+                }
+            } 
+            
+            // 3. Normal Binary Operator
+            else {
                 int preced_curr = get_precedence(expr[i]);
                 int preced_top = -1;
                 while(!opers.empty() 
                         && opers.top() != '(' 
-                        && (preced_top = get_precedence(opers.top()) > preced_curr
+                        // FIX: Added parentheses around the assignment
+                        && ((preced_top = get_precedence(opers.top())) > preced_curr
                             || (preced_curr == preced_top && get_associative(expr[i]) == -1))) {
-                    solve_expression_helper_chop(nums, opers, chop); 
+                    solve_expression_helper_chop(nums, opers); 
                 }
-                
                 opers.push(expr[i]);
             }
         } 
@@ -652,44 +701,35 @@ double solve_expression_chop(std::string expr, int chop) {
         // left parenthesis
         else if(expr[i] == '(') {
             
-            if(i > 0) {
-                if (is_digit(expr[i-1]) || ')' == expr[i-1]) {
-                    opers.push('(');
-                    opers.push('*');
-                }else if(!opers.empty() && opers.top() == '-') {
-                    opers.pop(); 
-
-                    opers.push('+');
-                    opers.push('*');
-                    if(nums.size() < 1) {
-                        nums.push(0);
-                    }
-                    nums.push(-1);
-                    
-                    opers.push('(');
-                }else if('-' == expr[i-1]) {
-                    opers.pop(); // removes added -
-                    opers.push('+');
-                    opers.push('*');
-                    if(nums.size() < 1) {
-                        nums.push(0);
-                    }
-                    nums.push(-1);
-                    opers.push('(');
-                } 
-            } else {
-                opers.push('(');
+            // FIX: Handle implicit multiplication (e.g., "5(" or ")(") safely
+            if(i > 0 && (is_digit(expr[i-1]) || ')' == expr[i-1])) {
+                int preced_curr = get_precedence('*');
+                int preced_top = -1;
+                
+                // Process the implicit '*' before pushing the '('
+                while(!opers.empty() 
+                        && opers.top() != '(' 
+                        && ((preced_top = get_precedence(opers.top())) > preced_curr
+                            || (preced_curr == preced_top && get_associative('*') == -1))) {
+                    solve_expression_helper_chop(nums, opers); 
+                }
+                opers.push('*');
             }
+            
+            opers.push('(');
         } 
 
         // right parenthesis
         else if(expr[i] == ')') {
             while(!opers.empty() && opers.top() != '(') {
-                solve_expression_helper_chop(nums, opers, chop); 
+                solve_expression_helper_chop(nums, opers); 
             }
-           
+            
+            // Added check to prevent popping an empty stack on mismatched parentheses
             if(!opers.empty() && opers.top() == '(') {
                 opers.pop();
+            } else {
+                throw std::runtime_error("Mismatched parentheses");
             }
         } 
 
@@ -697,10 +737,15 @@ double solve_expression_chop(std::string expr, int chop) {
     }
 
     while(!opers.empty()) {
-        solve_expression_helper_chop(nums, opers, chop); 
+        solve_expression_helper_chop(nums, opers); 
     }
     
-    return get_chop(nums.top(), chop); // last number in stack is the answer 
+    // FIX: Catch empty expressions to prevent calling .top() on an empty stack
+    if (nums.empty()) {
+        throw std::runtime_error("Empty or invalid expression");
+    }
+    
+    return get_chop_unnormalized(nums.top(), DISPLAY_PRECISION); 
 }
 
 void solve_expression_helper_round(std::stack<double>& nums, std::stack<char>& opers, int digit) {
@@ -728,19 +773,11 @@ double solve_expression_round(std::string expr, int digit) {
 
     std::stack<double> nums;
     std::stack<char> opers;
-
+    
     int i = 0;
-
-    if(is_operator(expr[0])) {
-        if('+' == expr[0] || '-' == expr[0]){
-            if(1 < expr.length() && !is_digit(expr[1])) {
-                nums.push(0);
-                i++;
-            }
-        } else {
-            throw std::runtime_error("Missing operand");
-        }
-    }
+    
+    // Removed the buggy expr[0] check. The while-loop now natively handles
+    // unary operators at the start of the string.
 
     while(i < expr.length()) {
         // digit 
@@ -753,21 +790,48 @@ double solve_expression_round(std::string expr, int digit) {
         // operator (+, -, *, /, ^)
         else if(is_operator(expr[i])) {
             
-            // check if '-' is aview code in gdb start of a negative number or is an operator 
-            if(expr[i] == '-' && (i == 0 || is_operator(expr[i-1]) || expr[i-1] == '(') && is_digit(expr[i+1])) {
-                int num_len;
-                nums.push(get_num_from_index(i, expr, &num_len));
-                i += num_len - 1;
-            } else {
+            // 1. Unary Plus (e.g., "+5" or "(+5)"): completely ignore it
+            if(expr[i] == '+' && (i == 0 || is_operator(expr[i-1]) || expr[i-1] == '(')) {
+                i++;
+                continue; 
+            }
+            
+            // 2. Unary Minus (e.g., "-5" or "-(5)")
+            else if(expr[i] == '-' && (i == 0 || is_operator(expr[i-1]) || expr[i-1] == '(')) {
+                if(i + 1 < expr.length() && is_digit(expr[i+1])) {
+                    // Negative number attached directly to digits
+                    int num_len;
+                    nums.push(get_num_from_index(i, expr, &num_len));
+                    i += num_len - 1;
+                } else {
+                    // Unary minus before a parenthesis, e.g., -(5)
+                    // Treat it mathematically as "-1 *" 
+                    nums.push(-1.0);
+                    
+                    int preced_curr = get_precedence('*');
+                    int preced_top = -1;
+                    while(!opers.empty() 
+                            && opers.top() != '(' 
+                            // FIX: Added parentheses around the assignment
+                            && ((preced_top = get_precedence(opers.top())) > preced_curr
+                                || (preced_curr == preced_top && get_associative('*') == -1))) {
+                        solve_expression_helper_round(nums, opers); 
+                    }
+                    opers.push('*');
+                }
+            } 
+            
+            // 3. Normal Binary Operator
+            else {
                 int preced_curr = get_precedence(expr[i]);
                 int preced_top = -1;
                 while(!opers.empty() 
                         && opers.top() != '(' 
-                        && (preced_top = get_precedence(opers.top()) > preced_curr
+                        // FIX: Added parentheses around the assignment
+                        && ((preced_top = get_precedence(opers.top())) > preced_curr
                             || (preced_curr == preced_top && get_associative(expr[i]) == -1))) {
-                    solve_expression_helper_round(nums, opers, digit); 
+                    solve_expression_helper_round(nums, opers); 
                 }
-                
                 opers.push(expr[i]);
             }
         } 
@@ -775,44 +839,35 @@ double solve_expression_round(std::string expr, int digit) {
         // left parenthesis
         else if(expr[i] == '(') {
             
-            if(i > 0) {
-                if (is_digit(expr[i-1]) || ')' == expr[i-1]) {
-                    opers.push('(');
-                    opers.push('*');
-                }else if(!opers.empty() && opers.top() == '-') {
-                    opers.pop(); 
-
-                    opers.push('+');
-                    opers.push('*');
-                    if(nums.size() < 1) {
-                        nums.push(0);
-                    }
-                    nums.push(-1);
-                    
-                    opers.push('(');
-                }else if('-' == expr[i-1]) {
-                    opers.pop(); // removes added -
-                    opers.push('+');
-                    opers.push('*');
-                    if(nums.size() < 1) {
-                        nums.push(0);
-                    }
-                    nums.push(-1);
-                    opers.push('(');
-                } 
-            } else {
-                opers.push('(');
+            // FIX: Handle implicit multiplication (e.g., "5(" or ")(") safely
+            if(i > 0 && (is_digit(expr[i-1]) || ')' == expr[i-1])) {
+                int preced_curr = get_precedence('*');
+                int preced_top = -1;
+                
+                // Process the implicit '*' before pushing the '('
+                while(!opers.empty() 
+                        && opers.top() != '(' 
+                        && ((preced_top = get_precedence(opers.top())) > preced_curr
+                            || (preced_curr == preced_top && get_associative('*') == -1))) {
+                    solve_expression_helper_round(nums, opers); 
+                }
+                opers.push('*');
             }
+            
+            opers.push('(');
         } 
 
         // right parenthesis
         else if(expr[i] == ')') {
             while(!opers.empty() && opers.top() != '(') {
-                solve_expression_helper_round(nums, opers, digit); 
+                solve_expression_helper_round(nums, opers); 
             }
-           
+            
+            // Added check to prevent popping an empty stack on mismatched parentheses
             if(!opers.empty() && opers.top() == '(') {
                 opers.pop();
+            } else {
+                throw std::runtime_error("Mismatched parentheses");
             }
         } 
 
@@ -820,10 +875,15 @@ double solve_expression_round(std::string expr, int digit) {
     }
 
     while(!opers.empty()) {
-        solve_expression_helper_round(nums, opers, digit); 
+        solve_expression_helper_round(nums, opers); 
     }
-
-    return get_round(nums.top(), digit); // last number in stack is the answer 
+    
+    // FIX: Catch empty expressions to prevent calling .top() on an empty stack
+    if (nums.empty()) {
+        throw std::runtime_error("Empty or invalid expression");
+    }
+    
+    return get_round(nums.top(), DISPLAY_PRECISION); 
 }
 
 
