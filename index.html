@@ -7,44 +7,114 @@
     
     <link rel='stylesheet' href='style.css'>
     <script src="/build/module.js"></script>
+    <style>
+        .tab-btn {
+            text-align: left;
+            width: auto;
+            padding-right: 5rem;
+            font-size: 2rem;
+            background-color: white;
+        }
+        
+        .tab-btn-unselected {
+            text-align: left;
+            width: auto;
+            padding-right: 5rem;
+            font-size: 1.25rem;
+            background-color: white;
+            border: none;
+            color: gray;
+        }
+        #conversion-group {
+            display: none;
+        }
+    </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Expression Evaluator</h2>
+    <div style="display: row; margin-bottom: 2rem">
+        <button class="tab-btn" id="btn-tab1" onclick="openTab(event, 'tab1')">Expression Evaluator</button>
+        <button class="tab-btn-unselected" id="btn-tab2" onclick="openTab(event, 'tab2')">Conversion</button>
+    </div>
     
-    <div class="input-group" id="main-input">
-        <label for="expressionInput">Math Expression</label>
-        <input type="text" id="expressionInput" placeholder="e.g., 10 / 3 or PI * 2">
-    </div>
+    <div id="expr-eval-group">
+        <div class="input-group" id="main-input">
+            <label for="expressionInput">Math Expression</label>
+            <input type="text" id="expressionInput" placeholder="e.g., 10 / 3 or PI * 2">
+        </div>
 
-    <div class="input-group" id="variables-input">
-        <label for="variables-holder">Variables</label>
-        <div id="variables-holder" class="holder"></div>
-    </div>
+        <div class="input-group" id="variables-input">
+            <label for="variables-holder">Variables</label>
+            <div id="variables-holder" class="holder"></div>
+        </div>
 
-    <div class="input-group">
-        <label for="terminationMethod">Termination Method</label>
-        <select id="terminationMethod" onchange="onChangeTermMethod(this)" style="margin-bottom: 1.5rem;">
-            <option value="none">None</option>
-            <option value="rounding">Rounding</option>
-            <option value="chopping">Chopping</option>
-        </select> 
+        <div class="input-group">
+            <label for="terminationMethod">Termination Method</label>
+            <select id="terminationMethod" onchange="onChangeTermMethod(this)" style="margin-bottom: 1.5rem;">
+                <option value="none">None</option>
+                <option value="rounding">Rounding</option>
+                <option value="chopping">Chopping</option>
+            </select> 
 
-        <div id="terminationInput" style="display: None;">
-            <label for="terminationDigit">Termination Digit</label>
-            <input type="number" id="terminationDigit" placeholder="1" min="1" max="8" step="1" value="1"></input>
+            <div id="terminationInput" style="display: None;">
+                <label for="terminationDigit">Termination Digit</label>
+                <input type="number" id="terminationDigit" placeholder="1" min="1" max="8" step="1" value="1"></input>
+            </div>
+        </div>
+
+        <button class="button-main" onclick="calculate()" style="margin-bottom: 1.5rem;">Calculate</button>
+
+        <div id="result-group">
+            <label for="result-box">Result:</label>
+            <div id="result-box"></div>
         </div>
     </div>
 
-    <button onclick="calculate()" style="margin-bottom: 1.5rem;">Calculate</button>
+    <div id="conversion-group">
+        <div class="input-group" id="main-input">
+            <label for="converInput">Value</label>
+            <input type="text" id="converInput" onchange="onChangeConMethod(this)" >
+        </div>
+        
+        <div class="input-group">
+            <label for="convertMethod">Termination Method</label>
+            <select id="convertMethod" style="margin-bottom: 1.5rem;">
+                <option value="binaryToDecimal">Binary to Decimal</option>
+                <option value="decimalToBinary">Decimal to Binary</option>
+                <option value="decimalToIEEE">Decimal to IEEE</option>
+                <option value="ieeeToDecimal">IEEE to Decimal</option>
+            </select> 
+        </div>
 
-    <div id="result-group">
-        <label for="result-box">Result:</label>
-        <div id="result-box"></div>
+        <button class="button-main" onclick="convert()" style="margin-bottom: 1.5rem;">Convert</button>
+
+        <div id="conv-result-group">
+            <label for="conv-result-box">Result:</label>
+            <div id="conv-result-box"></div>
+        </div>
     </div>
+
 </div>
     <script>
+        function openTab(e, tab) {
+            if(tab === 'tab1') {
+                document.getElementById('btn-tab1').className = 'tab-btn';
+                document.getElementById('btn-tab2').className = 'tab-btn-unselected';
+
+                document.getElementById('expr-eval-group').style.display = 'block';
+                document.getElementById('conversion-group').style.display = 'none';
+                document.getElementById('result-group').style.display = 'none';
+            } else if(tab === 'tab2') {
+                document.getElementById('btn-tab1').className = 'tab-btn-unselected';
+                document.getElementById('btn-tab2').className = 'tab-btn';
+
+                document.getElementById('expr-eval-group').style.display = 'none';
+                document.getElementById('conversion-group').style.display = 'block';
+                document.getElementById('conv-result-group').style.display = 'none';
+            }
+        }
+
         function toDisplay(x) {
             return Math.trunc(x * 100000000) / 100000000;
         }
@@ -86,6 +156,19 @@
         // TODO:
         //  binary operations
         //  add functions?
+
+        function onChangeConMethod(convmethod) {
+            const method = convmethod.value;
+            if(method === 'binaryToDecimal') {
+                convmethod.placeholder = '110111';
+            } else if(method === 'decimalToBinary') {
+                convmethod.placeholder = '67';
+            } else if(method === 'ieeeToDecimal') {
+                convmethod.placeholder = '0100000001010000110000000000000000000000000000000000000000000000';
+            } else if(method === 'decimalToIEEE') {
+                convmethod.placeholder = '67';
+            } 
+        }
 
         function onChangeExpression(newExpr) {
             const vars = getVariables(newExpr);
@@ -129,6 +212,25 @@
                 document.getElementById('terminationInput').style.display = "None";
             } else if(method === 'chopping' || method === 'rounding') {
                 document.getElementById('terminationInput').style.display = "block";
+            }
+        }
+
+        function convert() {
+            var toConv = document.getElementById('converInput').value;
+            const method = document.getElementById('convertMethod').value;
+            console.log(method); 
+            document.getElementById('conv-result-group').style.display = 'block';
+            
+            const results = document.getElementById('conv-result-box');
+            results.textContent = '';
+            if(method == 'binaryToDecimal') {
+                results.textContent += 'Decimal: ' + Module.binary_to_decimal(toConv);
+            } else if(method == 'decimalToBinary') {
+                results.textContent += 'Binary: ' + Module.decimal_to_binary(parseFloat(toConv));
+            } else if(method == 'ieeeToDecimal') {
+                results.textContent += 'Decimal: ' + Module.ieee_to_decimal(toConv);
+            } else if(method == 'decimalToIEEE') {
+                results.textContent += 'IEEE: ' + Module.decimal_to_ieee(parseFloat(toConv));
             }
         }
 
@@ -198,6 +300,7 @@
             
             document.getElementById('result-group').style.display = 'none';
             document.getElementById('variables-input').style.display = 'none';
+            document.getElementById('btn-tab2').className = 'tab-btn-unselected';
         };
     </script>
 
